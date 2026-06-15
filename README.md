@@ -1,0 +1,151 @@
+<h1 align="center">EndurancePy</h1>
+
+<p align="center">
+  <b>Access endurance racing timing & results data in Python — the way
+  <a href="https://github.com/theOehrly/Fast-F1">FastF1</a> does it for Formula 1.</b>
+</p>
+
+<p align="center">
+  <a href="#status"><img alt="Status" src="https://img.shields.io/badge/status-design%20phase-orange"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+</p>
+
+---
+
+## What is EndurancePy?
+
+**EndurancePy** is a Python package that aims to make endurance racing data as
+easy to analyse as FastF1 made Formula 1 data. It loads and exposes **timing and
+results data** — lap times, sector times, stints, pit stops, classifications,
+positions (overall *and* per class), weather and flag/track status — as
+convenient, **pandas-based** objects, primarily from the publicly available
+**Al Kamel Systems** timing archives.
+
+> **Inspired by [FastF1](https://github.com/theOehrly/Fast-F1).** EndurancePy
+> deliberately mirrors FastF1's design and API surface (`get_session()`,
+> `Session.load()`, `Session.laps`, `Session.results`, `pick_*` filters, an
+> on-disk cache, a `plotting` helper module, …) so that anyone familiar with
+> FastF1 feels at home. EndurancePy is an independent project and is **not**
+> affiliated with FastF1, the FIA, the ACO, IMSA, Al Kamel Systems, or any
+> championship.
+
+## Target championships
+
+| Series | Full name | Timing source |
+|---|---|---|
+| **WEC** | FIA World Endurance Championship | Al Kamel |
+| **ELMS** | European Le Mans Series | Al Kamel |
+| **AsLMS** | Asian Le Mans Series | Al Kamel |
+| **LMC** | (Michelin) Le Mans Cup | Al Kamel |
+| **IMSA** | IMSA SportsCar Championship | IMSA results portal *(to be confirmed)* |
+
+## Status
+
+> ⚠️ **Design phase — no runnable code yet.**
+
+This repository currently contains the **analysis and design groundwork** that
+precedes implementation:
+
+- [`docs/analyse_fastf1.md`](docs/analyse_fastf1.md) — an exhaustive inventory of
+  **what FastF1 provides** (its API, objects, DataFrame columns and methods),
+  with, for each item, an assessment of whether it can be reproduced for
+  endurance racing and how it maps onto Al Kamel data. This is the functional
+  spec for the package.
+- `LICENSE` — MIT.
+
+The first goal is explicit: **offer the same content as FastF1 wherever the
+underlying data exists.** See the analysis document for the gap analysis — the
+two structural limitations are that endurance racing has **no public car
+telemetry** (no speed/RPM/gear/throttle/brake/GPS streams) and **no normalised
+historical database** equivalent to Ergast.
+
+## Planned API (preview)
+
+The intended API mirrors FastF1, with an added **series** axis (several
+championships coexist):
+
+```python
+import endurancepy as ep
+
+# Season calendar for a given series
+schedule = ep.get_event_schedule(2024, series="WEC")
+
+# A specific session
+session = ep.get_session(2024, series="WEC", event="Le Mans", session="Race")
+session.load()
+
+# Classification (per car / per class)
+session.results
+session.results.pick_classes("HYPERCAR")
+
+# Laps
+laps = session.laps
+laps.pick_cars(["7", "8"])
+laps.pick_classes("LMGT3")
+laps.pick_drivers("HARTLEY")
+fastest = laps.pick_fastest()
+
+# Side data
+session.weather_data
+session.track_status          # green / FCY / SC / code 60 / red
+```
+
+> This is a **preview of the target design**, not yet implemented.
+
+## Roadmap
+
+- [x] Inventory FastF1's full content and API surface
+- [x] Map FastF1 features → endurance data availability (Al Kamel)
+- [x] License & project groundwork
+- [ ] Al Kamel results-archive client + cache
+- [ ] `Analysis` CSV parser → `Laps`
+- [ ] `Session` / `Event` / `EventSchedule` objects
+- [ ] `SessionResults` (per car & per class) + classification parsers
+- [ ] Weather & track-status (flags / FCY / SC / code 60)
+- [ ] `plotting` helpers (colours by class / team / manufacturer)
+- [ ] Championship standings module
+- [ ] Docs, tests, packaging & PyPI release
+
+## How it relates to FastF1
+
+| FastF1 | EndurancePy | Notes |
+|---|---|---|
+| `fastf1.get_session()` | `ep.get_session(..., series=...)` | + series axis |
+| `Session.load()` | `Session.load()` | downloads & parses Al Kamel files |
+| `Session.laps` (`Laps`) | `Session.laps` (`Laps`) | + `Class`, `CarNumber`, `Manufacturer`, `PositionInClass` |
+| `Session.results` (`SessionResults`) | `Session.results` | per car/crew & per class |
+| `Lap.get_telemetry()` (`Telemetry`) | — | **no public endurance telemetry** |
+| `fastf1.Cache` | `ep.Cache` | on-disk cache (essential for 24h races) |
+| `fastf1.plotting` | `ep.plotting` | colours by class/team/manufacturer |
+| `fastf1.ergast` | `ep.standings` (later) | rebuilt from results |
+
+A detailed, column-by-column comparison lives in
+[`docs/analyse_fastf1.md`](docs/analyse_fastf1.md).
+
+## Data sources & legal note
+
+EndurancePy is built around **publicly published** endurance timing archives
+(Al Kamel Systems results portals; official championship sites such as
+`fiawec.com`, `imsa.com`). It is an **unofficial, community project** for
+analysis and research purposes.
+
+- All championship names, logos and data remain the property of their respective
+  owners (FIA, ACO, IMSA, the championships, and Al Kamel Systems).
+- Always respect the terms of service and `robots.txt` of any site you fetch
+  from, and be considerate with request rates (the built-in cache exists partly
+  for this reason).
+- This project is **not** affiliated with, endorsed by, or associated with any of
+  the above organisations.
+
+## License
+
+[MIT](LICENSE) © 2026 Romain Flambard and the EndurancePy contributors —
+the same permissive license as FastF1.
+
+## Acknowledgements
+
+- **[FastF1](https://github.com/theOehrly/Fast-F1)** by theOehrly & contributors,
+  the inspiration and design reference for this project.
+- **Al Kamel Systems**, whose public timing archives make endurance data
+  analysis possible.
