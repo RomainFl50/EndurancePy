@@ -525,10 +525,10 @@ portée à partir des archives Al Kamel.
 
 ## 14. Transposition à l'endurance (Al Kamel)
 
-> ⏳ *Section en cours de consolidation : les en-têtes exacts du CSV d'analyse Al
-> Kamel et les URL des portails sont en cours de vérification par une recherche
-> dédiée ; elle sera affinée à son retour. Le contenu ci-dessous reflète l'état
-> actuel des connaissances et sera corrigé si besoin.*
+> ✅ *Section consolidée à partir d'une recherche dédiée. Les faits notés
+> « vérifié » proviennent de fichiers CSV réels, de code de parseurs open-source
+> ou de pages officielles ; ceux notés « inféré » sont raisonnés mais non
+> formellement documentés.*
 
 ### 14.1 Spécificités de l'endurance vs F1 (impact sur le modèle de données)
 
@@ -536,40 +536,175 @@ portée à partir des archives Al Kamel.
 |---|---|---|---|
 | Unité classée | Pilote | **Voiture / équipage** | Ajouter `CarNumber`, `Crew` (2–4 pilotes), classement par voiture. |
 | Catégories | Mono-classe | **Multi-classes** (WEC : Hypercar/LMP2/LMGT3 ; IMSA : GTP/LMP2/GTD Pro/GTD ; ELMS : LMP2/LMP3/LMGT3) | Ajouter `Class`, `PositionInClass`, `GapInClass`. |
-| Pilotes/voiture | 1 | **Plusieurs** | `Driver` = pilote *du tour/relais* ; gérer les changements de pilote. |
-| Durée | ~90 min | **6 h / 8 h / 10 h / 24 h** | Classement **par heure** ; volumes de tours énormes (cache crucial). |
-| Neutralisations | SC / VSC | **SC, FCY, Code 60, slow zones** | Étendre les statuts de piste. |
-| Performance | — | **Balance of Performance (BoP)** | Métadonnée optionnelle par voiture. |
+| Pilotes/voiture | 1 | **Plusieurs** | `Driver` = pilote *du relais* ; clé de tour = **(n° voiture, n° tour)**. |
+| Durée | ~90 min | **6 h / 8 h / 10 h / 24 h** | Classement **par heure** ; volumes énormes (cache crucial) ; gérer le *rollover* `24:` de `ELAPSED`. |
+| Neutralisations | SC / VSC | **SC, FCY, Code 60, slow zones** | Étendre les statuts de piste (`FLAG_AT_FL`). |
+| Performance | — | **Balance of Performance (BoP)** | Source séparée (bulletins PDF), **absente** des CSV de timing. |
 | Constructeur | Écurie | **Manufacturer** distinct de l'équipe | Ajouter `Manufacturer`. |
 
 ### 14.2 Source de données : archives Al Kamel
 
-Al Kamel Systems assure le chronométrage de la WEC, l'ELMS, l'Asian Le Mans
-Series et la Le Mans Cup (IMSA utilise un dispositif distinct — à confirmer).
-Pour chaque session, un portail de résultats publie des fichiers téléchargeables.
-Le plus précieux est le **CSV d'analyse** (« Analysis »), une ligne par tour et
-par voiture, qui contient l'essentiel de ce dont EndurancePy a besoin.
+**Fait clé (vérifié)** : *tous* les championnats visés sont chronométrés par Al
+Kamel Systems — **y compris IMSA** (sur un domaine différent). Un **seul
+parseur** couvre donc WEC / ELMS / Asian Le Mans / Le Mans Cup / IMSA ; seuls
+changent l'hôte de base et de menus détails d'encodage d'URL.
 
-*En-têtes pressentis du CSV d'analyse (à confirmer)* : `NUMBER`,
-`DRIVER_NUMBER`, `LAP_NUMBER`, `LAP_TIME`, `LAP_IMPROVEMENT`,
-`CROSSING_FINISH_LINE_IN_PIT`, `S1/S2/S3` (+ `_IMPROVEMENT`), `KPH`, `ELAPSED`,
-`HOUR`, `TOP_SPEED`, `DRIVER_NAME`, `PIT_TIME`, `CLASS`, `GROUP`, `TEAM`,
-`MANUFACTURER`, `FLAG_AT_FL`. → mapping vers les colonnes `Laps` du §5.
+| Série | Portail de résultats (hôte) |
+|---|---|
+| FIA WEC | `fiawec.alkamelsystems.com` |
+| ELMS | `elms.alkamelsystems.com` |
+| Asian Le Mans Series | `alms.alkamelsystems.com` |
+| (Michelin) Le Mans Cup | `lemanscup.alkamelsystems.com` |
+| IMSA | `imsa.results.alkamelcloud.com` (anc. `imsa.alkamelsystems.com`) |
 
-### 14.3 Tableau de correspondance (cible)
+**Structure d'URL des fichiers (vérifiée)** :
+
+```
+https://<hôte>/Results/<NN_YYYY>/<NN_ÉVÉNEMENT>/<NNN_SÉRIE>/<YYYYMMDDHHMM_SESSION>/[Hour N/]<FICHIER>
+```
+
+- `<NN_YYYY>` : saison, ex. `13_2024`, `08_2018-2019`
+- `<NN_ÉVÉNEMENT>` : ex. `04_LE MANS`, `07_SPA FRANCORCHAMPS`
+- `<NNN_SÉRIE>` : ex. `267_FIA WEC`
+- `<YYYYMMDDHHMM_SESSION>` : ex. `201905041330_Race`
+- Pour les courses, un sous-dossier `Hour N/` ; espaces encodés `%20`
+- Navigation HTML : `?season=13_2024&evvent=01_SILVERSTONE` *(le paramètre est
+  bien orthographié* `evvent`*, avec deux « v » — vérifié)*
+
+> Exemple réel :
+> `https://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV`
+
+### 14.3 Fichiers publiés par session
+
+Les noms sont préfixés d'un identifiant numérique (`03_`, `23_`, `26_`…).
+
+| Fichier | Format | Préfixe | Remarque |
+|---|---|---|---|
+| Classification (par heure / prov. / finale) | **PDF + CSV** | `03_` | versions par heure en course |
+| **Analysis** (tour par tour) | **PDF + CSV** | `23_` | **export par tour — le fichier clé** |
+| Time Cards (cartes de temps par pilote) | **CSV** (+PDF) | `23_` | |
+| Weather Report | **PDF + CSV** | `26_` | météo |
+| Entry List, Starting Grid, Lap Chart, Best Sectors, Fastest Laps, Max Speed, Circuit Map | **PDF seul** | divers | **dérivables** du CSV Analysis |
+
+> Seuls **Classification, Analysis, Time Cards, Weather** sont en CSV. Tout le
+> reste est PDF mais **reconstructible** à partir du CSV Analysis (lap chart,
+> meilleurs secteurs, meilleurs tours, relais, arrêts…).
+
+### 14.4 Le CSV « Analysis » (cœur de la donnée) — format vérifié
+
+Séparateur `;`, UTF-8 **avec BOM** (`﻿` devant `NUMBER`). Attention : les
+~15 premières colonnes ont une **espace de tête** après le `;` (ex.
+`; DRIVER_NUMBER`) → prévoir un mappeur d'en-têtes tolérant. L'en-tête **varie
+selon la saison** (les anciens fichiers 2018-19 n'ont ni `Sn_SECONDS` ni
+`FLAG_AT_FL`).
+
+En-tête moderne vérifié :
+
+```
+NUMBER; DRIVER_NUMBER; LAP_NUMBER; LAP_TIME; LAP_IMPROVEMENT; CROSSING_FINISH_LINE_IN_PIT; S1; S1_IMPROVEMENT; S2; S2_IMPROVEMENT; S3; S3_IMPROVEMENT; KPH; ELAPSED; HOUR;S1_LARGE;S2_LARGE;S3_LARGE;TOP_SPEED;DRIVER_NAME;PIT_TIME;CLASS;GROUP;TEAM;MANUFACTURER;FLAG_AT_FL;S1_SECONDS;S2_SECONDS;S3_SECONDS;
+```
+
+| Colonne | Sens | Format / unité | → colonne `Laps` (cf. §5) |
+|---|---|---|---|
+| `NUMBER` | N° de **voiture** | str (garder les zéros : `03`, `021`) | `CarNumber` |
+| `DRIVER_NUMBER` | Pilote dans la voiture (1,2,3…) | int | (→ `Driver`/`DriverNumber` via Time Cards) |
+| `LAP_NUMBER` | N° de tour de la voiture | int | `LapNumber` |
+| `LAP_TIME` | Temps au tour | `M:SS.mmm` / `H:MM:SS.mmm` | `LapTime` |
+| `LAP_IMPROVEMENT` | Amélioration du tour | `0`=aucune, `1`=perso, `2`=session | `IsPersonalBest` (déduit) |
+| `CROSSING_FINISH_LINE_IN_PIT` | Tour terminé aux stands | vide ou **`B`** (box) | `PitInTime` (déduit) |
+| `S1`/`S2`/`S3` | Temps de secteur | `M:SS.mmm` | `Sector{1,2,3}Time` |
+| `Sn_IMPROVEMENT` | Amélioration secteur | `0`/`1`/`2` | — |
+| `KPH` | **Vitesse moyenne du tour** | km/h | (nouveau `LapAvgSpeed`) |
+| `ELAPSED` | Temps de session cumulé au passage | `H:MM:SS.mmm` (*rollover* `24:`) | `Time` |
+| `HOUR` | Heure du jour au passage ligne | `HH:MM:SS.mmm` | `LapStartDate` (déduit) |
+| `Sn_LARGE` | Secteur, forme paddée | `0:23.119` | — (redondant) |
+| `TOP_SPEED` | **Pointe au speed-trap** sur ce tour | km/h (souvent vide) | `SpeedST` |
+| `DRIVER_NAME` | Nom du pilote | str (parfois vide) | `Driver`/`FullName` |
+| `PIT_TIME` | Temps passé aux stands | `H:MM:SS.mmm` (vide si pas d'arrêt) | `PitInTime`/`PitOutTime` (déduit) |
+| `CLASS` | Catégorie | `HYPERCAR`, `LMP2`, `LMGT3`, `GTP`, `GTD`… | **`Class`** (nouveau) |
+| `GROUP` | Sous-groupe / code classe | `H`… (souvent vide) | — |
+| `TEAM` | Équipe engageante | str | `Team` |
+| `MANUFACTURER` | Constructeur (IMSA y met parfois l'équipe) | str | **`Manufacturer`** (nouveau) |
+| `FLAG_AT_FL` | Drapeau au passage ligne | `GF`/`FCY`/`SC`/`SF`/`FF`… | `TrackStatus` |
+| `Sn_SECONDS` | Secteur en secondes décimales | float (`91.594`) | `Sector{1,2,3}Time` |
+
+> ⚠️ Pièges confirmés : **`KPH` = vitesse moyenne du tour**, à ne pas confondre
+> avec `TOP_SPEED` (pointe). **`NUMBER` est une chaîne** (zéros significatifs).
+>
+> **Variante étendue IMSA** : `23_AnalysisEnduranceWithSections_<session>.CSV`
+> ajoute les **boucles intermédiaires** (mini-secteurs) :
+> `IM1a_time/_elapsed`, `IM1_time/_elapsed`, `IM2_time`/`INT-2_*`, …,
+> `FL_time/_elapsed`. Le parseur doit rester tolérant à ces colonnes en plus.
+
+Valeurs de `FLAG_AT_FL` :
+
+| Valeur | Sens | Confiance |
+|---|---|---|
+| `GF` | Green Flag (course normale) | vérifié — filtre standard pour le rythme « propre » |
+| `FCY` | Full Course Yellow (~80 km/h) | vérifié |
+| `SC` | Safety Car | vérifié |
+| `SF` | Slow zone / Slow Flag (zone localisée) | inféré (présent en données) |
+| `FF` | Finish / drapeau à damier | inféré (fin de session) |
+| `Code60`/`C60` | Code 60 (60 km/h, séries ACO) | inféré (réglementaire) |
+
+### 14.5 Registre des catégories (par série / saison)
+
+Le jeu de classes change selon la série **et** l'année → prévoir un registre :
+
+| Série | Classes (récentes) |
+|---|---|
+| WEC (2024+) | `HYPERCAR`, `LMGT3` (auparavant `LMP1`, `LMP2`, `LMGTE Pro`, `LMGTE Am`) |
+| ELMS | `LMP2`, `LMP3`, `LMGT3` (anc. `LMGTE`) |
+| Asian Le Mans | `LMP2`, `LMP3`, `GT` |
+| Le Mans Cup | `LMP3`, `GT3` |
+| IMSA | `GTP`, `LMP2`, `LMP3`, `GTD Pro`, `GTD` (hist. `DPi`) |
+
+### 14.6 Flux live (phase ultérieure)
+
+Plateforme « LT2 » sur `livetiming.alkamelsystems.com` (chemins par série :
+`/fiawec`, `/imsa`…), transport **Socket.IO** (vérifié). Les noms exacts
+d'événements/champs JSON restent à confirmer en lisant le connecteur Al Kamel de
+`timing71/livetiming-core`. → **non prioritaire** : les archives CSV suffisent
+pour la phase 1.
+
+### 14.7 Implémentations de référence et données de test
+
+- **`timing71/livetiming-core`** (Python) — la référence (CSV + live Socket.IO).
+- **`f1datajunkie/WEC`** (Python/Jupyter) — didactique, construction d'URL,
+  `pd.read_csv(sep=';')`, analyses de relais/rythme.
+- **`y047aka/elm-motorsport-analysis`** (Rust/Elm) — en-tête moderne complet en
+  fixture de test.
+- Autres : `svglol/endurance-results` (URLs), `Razgrizaces/alkamel_stint_analyzer`
+  (schéma SQL), `isfraser/endurance` (R), `tobi/imsa_data` (+ dataset HuggingFace
+  `tobil/imsa`), repos hackathon « Toyota Hack The Track » (CSV IMSA réels).
+
+### 14.8 Note légale (importante)
+
+Les pages Al Kamel portent une mention explicite : la donnée est « *wholly owned
+by Al Kamel Systems S.L.* » et toute **redistribution** sans accord peut entraîner
+des poursuites. Conséquences pour EndurancePy :
+
+- Télécharger/parser pour un usage **personnel/recherche** ≠ **redistribuer** les
+  fichiers bruts. EndurancePy **ne doit pas embarquer ni republier** les archives.
+- Respecter les CGU et `robots.txt`, limiter le débit des requêtes (le **cache**
+  sert aussi à cela), s'identifier proprement (User-Agent).
+- La BoP n'est pas dans les CSV de timing : source PDF séparée si besoin.
+
+### 14.9 Tableau de correspondance (cible)
 
 | Concept FastF1 | Équivalent EndurancePy | Source endurance |
 |---|---|---|
 | `get_session(year, gp, id)` | `get_session(year, series, event, session)` | Portail Al Kamel |
 | `EventSchedule` | `EventSchedule` (+ `Series`) | Calendriers officiels |
-| `Session.results` | `SessionResults` (+ classe/équipage) | Classement (CSV/PDF) |
-| `Session.laps` | `Laps` (+ classe/voiture/manufacturer) | **CSV d'analyse** |
-| `Lap.get_telemetry()` | — (indisponible) | ❌ pas de source |
-| `weather_data` | `weather_data` | Rapport météo |
-| `track_status` | `track_status` (+ FCY/Code 60) | Drapeaux / `FLAG_AT_FL` |
+| `Session.results` | `SessionResults` (+ classe/équipage) | Classification CSV (`03_`) |
+| `Session.laps` | `Laps` (+ classe/voiture/manufacturer) | **CSV Analysis (`23_`)** |
+| `Lap`/`DriverNumber` → pilote | Time Cards (`23_`) pour relier pilote ↔ tours | Time Cards CSV |
+| `Lap.get_telemetry()` | — (indisponible) | ❌ pas de source publique |
+| `weather_data` | `weather_data` | Weather CSV (`26_`) |
+| `track_status` | `track_status` (+ FCY/SC/Code 60/SF) | `FLAG_AT_FL` |
 | `Cache` | `Cache` | local |
-| `plotting` | `plotting` (couleurs par classe/écurie) | table interne |
-| `ergast` | `standings` (recalcul) | recalcul/scraping |
+| `plotting` | `plotting` (couleurs par classe/écurie/constructeur) | table interne |
+| `ergast` | `standings` (recalcul) | recalcul à partir des résultats |
 
 ---
 

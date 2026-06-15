@@ -38,7 +38,12 @@ convenient, **pandas-based** objects, primarily from the publicly available
 | **ELMS** | European Le Mans Series | Al Kamel |
 | **AsLMS** | Asian Le Mans Series | Al Kamel |
 | **LMC** | (Michelin) Le Mans Cup | Al Kamel |
-| **IMSA** | IMSA SportsCar Championship | IMSA results portal *(to be confirmed)* |
+| **IMSA** | IMSA SportsCar Championship | Al Kamel (`imsa.results.alkamelcloud.com`) |
+
+> Good news for the implementation: **all of these series are timed by Al Kamel**,
+> so a single parser covers them all — only the base host and minor URL details
+> differ. See [`docs/analyse_fastf1.md`](docs/analyse_fastf1.md) §14 for the
+> verified file formats and URL structure.
 
 ## Status
 
@@ -132,6 +137,10 @@ analysis and research purposes.
 
 - All championship names, logos and data remain the property of their respective
   owners (FIA, ACO, IMSA, the championships, and Al Kamel Systems).
+- **Al Kamel Systems explicitly asserts ownership of its timing data** and warns
+  against redistribution without consent. EndurancePy is therefore designed to
+  **download and parse data for personal/research use only** — it does **not**
+  bundle, ship, or republish any raw timing archives. Please do the same.
 - Always respect the terms of service and `robots.txt` of any site you fetch
   from, and be considerate with request rates (the built-in cache exists partly
   for this reason).
