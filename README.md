@@ -57,6 +57,9 @@ precedes implementation:
   with, for each item, an assessment of whether it can be reproduced for
   endurance racing and how it maps onto Al Kamel data. This is the functional
   spec for the package.
+- [`docs/plan_implementation.md`](docs/plan_implementation.md) — the **phase-2
+  implementation plan**: package layout, target column schemas, parsing pipeline,
+  derivation algorithms, cache design, milestones and test strategy.
 - `LICENSE` — MIT.
 
 The first goal is explicit: **offer the same content as FastF1 wherever the
