@@ -41,32 +41,21 @@ convenient, **pandas-based** objects, primarily from the publicly available
 | **IMSA** | IMSA SportsCar Championship | Al Kamel (`imsa.results.alkamelcloud.com`) |
 
 > Good news for the implementation: **all of these series are timed by Al Kamel**,
-> so a single parser covers them all — only the base host and minor URL details
-> differ. See [`docs/analyse_fastf1.md`](docs/analyse_fastf1.md) §14 for the
-> verified file formats and URL structure.
+> so a single parser can cover them all — only the base host and minor URL
+> details differ.
 
 ## Status
 
-> ⚠️ **Design phase — no runnable code yet.**
-
-This repository currently contains the **analysis and design groundwork** that
-precedes implementation:
-
-- [`docs/analyse_fastf1.md`](docs/analyse_fastf1.md) — an exhaustive inventory of
-  **what FastF1 provides** (its API, objects, DataFrame columns and methods),
-  with, for each item, an assessment of whether it can be reproduced for
-  endurance racing and how it maps onto Al Kamel data. This is the functional
-  spec for the package.
-- [`docs/plan_implementation.md`](docs/plan_implementation.md) — the **phase-2
-  implementation plan**: package layout, target column schemas, parsing pipeline,
-  derivation algorithms, cache design, milestones and test strategy.
-- `LICENSE` — MIT.
+> ⚠️ **Early / design phase — no runnable code yet.** Contributions are very
+> welcome (see [Contributing](#contributing)).
 
 The first goal is explicit: **offer the same content as FastF1 wherever the
-underlying data exists.** See the analysis document for the gap analysis — the
-two structural limitations are that endurance racing has **no public car
-telemetry** (no speed/RPM/gear/throttle/brake/GPS streams) and **no normalised
-historical database** equivalent to Ergast.
+underlying data exists.** Two structural limitations are known up front:
+endurance racing has **no public car telemetry** (no speed/RPM/gear/throttle/
+brake/GPS streams) and **no normalised historical database** equivalent to
+Ergast — everything else (calendars, sessions, classifications, laps/sectors/
+stints/pit data, weather, flags) is within reach from the public timing
+archives.
 
 ## Planned API (preview)
 
@@ -128,8 +117,17 @@ session.track_status          # green / FCY / SC / code 60 / red
 | `fastf1.plotting` | `ep.plotting` | colours by class/team/manufacturer |
 | `fastf1.ergast` | `ep.standings` (later) | rebuilt from results |
 
-A detailed, column-by-column comparison lives in
-[`docs/analyse_fastf1.md`](docs/analyse_fastf1.md).
+## Contributing
+
+EndurancePy is an open, community project and contributions are welcome —
+whether it's code, documentation, test data, or simply reporting which series /
+seasons you'd like to see supported.
+
+Please read **[CONTRIBUTING.md](CONTRIBUTING.md)** to get started, and note that
+all participation is governed by our
+**[Code of Conduct](CODE_OF_CONDUCT.md)**.
+
+A good first step is to open an issue describing what you'd like to work on.
 
 ## Data sources & legal note
 
