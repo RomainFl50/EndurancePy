@@ -24,5 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reference column schemas, exceptions, logging, and the Al Kamel parser module
   layout (data loading not implemented yet). Project tooling (`pyproject.toml`
   with Hatchling, ruff, mypy, pytest) and a smoke-test suite.
+- Cache and Al Kamel client (milestone 2.1):
+  - `Cache`: two-stage on-disk cache — stage 1 raw HTTP via `requests-cache`
+    (SQLite), stage 2 parsed `DataFrame`s as Parquet plus JSON metadata,
+    namespaced by `PARSER_VERSION`. Includes `enable_cache`, `clear_cache`,
+    `get_cache_info`, `set_disabled`/`set_enabled`, `disabled()` context
+    manager, `offline_mode`, and dataframe/metadata save/load helpers.
+  - `alkamel.client`: `build_results_url` (verified `Results/...` tree, URL
+    encoding, optional `Hour N`) and a cache-aware `download`.
+  - Offline tests covering URL building, Parquet round-trips and the
+    download path.
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main

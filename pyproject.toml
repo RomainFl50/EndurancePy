@@ -75,7 +75,9 @@ select = ["E", "F", "I", "UP", "B", "W"]
 python_version = "3.10"
 files = ["src", "tests"]
 ignore_missing_imports = true
-warn_unused_ignores = true
+# Several dependencies (requests_cache, pyarrow, rapidfuzz, matplotlib, ...) ship
+# no type information; don't fail on their untyped imports.
+disable_error_code = ["import-untyped"]
 no_implicit_optional = true
 
 [tool.pytest.ini_options]
