@@ -53,8 +53,9 @@
 - **PDF** (phase ultérieure, extra) : `pdfplumber` (classification/entry list PDF).
 - **Live** (phase ultérieure, extra) : `python-socketio[client]` (feed « LT2 »).
 - **Qualité** : `pytest`, `pytest-cov`, `ruff` (lint+format), `mypy`.
-- **Packaging** : `pyproject.toml` (PEP 621), backend `hatchling` ou
-  `setuptools`. Distribution PyPI : `endurancepy` ; import : `endurancepy`.
+- **Packaging** : `pyproject.toml` (PEP 621), backend **`hatchling`** (acté),
+  layout **`src/`** (acté). Distribution PyPI : `endurancepy` ; import :
+  `endurancepy`.
 - **Extras** : `endurancepy[plot]`, `endurancepy[pdf]`, `endurancepy[live]`,
   `endurancepy[dev]`.
 
@@ -238,11 +239,13 @@ Traiter **par voiture** (`groupby('CarNumber')`, trié par `LapNumber`).
 
 Réplique du modèle FastF1 (cf. analyse §9) :
 
-- **Étage 1 (HTTP)** : `requests-cache` (SQLite), expiration configurable, sert
-  aussi de garde-fou anti-surcharge des serveurs Al Kamel.
-- **Étage 2 (parsé)** : sérialisation des objets parsés (`Laps`, `SessionResults`)
-  en pickle/parquet (`*.epkl`), versionné par un `PARSER_VERSION` (invalidation
-  au changement de schéma).
+- **Étage 1 (HTTP)** : `requests` + `requests-cache` (SQLite) *(acté)*,
+  expiration configurable, sert aussi de garde-fou anti-surcharge des serveurs
+  Al Kamel.
+- **Étage 2 (parsé)** : tables sérialisées en **Parquet** *(acté, via `pyarrow`)*
+  (`*.parquet`) + métadonnées de session en JSON ; l'objet `Laps`/`SessionResults`
+  est reconstruit à la lecture (trivial). Versionné par un `PARSER_VERSION`
+  (invalidation au changement de schéma).
 - **Résolution du dossier** : argument de `enable_cache` → variable
   d'environnement `ENDURANCEPY_CACHE` → défaut OS (`~/.cache/endurancepy`).
 - **API** (miroir FastF1) : `Cache.enable_cache(dir, …)`, `clear_cache(...)`,
@@ -378,9 +381,17 @@ class Laps(pandas.DataFrame):
 | Légalité (redistribution) | données « propriété Al Kamel » | parsing local only ; aucun jeu réel versionné ; respect CGU/`robots.txt`/débit. |
 | Live timing (Socket.IO) | schéma non documenté | hors phase 1 ; lire le connecteur `timing71` le moment venu. |
 
-**À trancher avant 2.0** : nom de distribution PyPI (`endurancepy` proposé),
-backend de build (`hatchling` proposé), gestion `src/` (recommandé), choix
-parquet vs pickle pour l'étage 2 du cache.
+**Décisions actées (avant 2.0)** :
+
+| Décision | Choix retenu |
+|---|---|
+| Layout du projet | **`src/` layout** |
+| Backend de build | **Hatchling** (PEP 621) |
+| Cache étage 2 (parsé) | **Parquet** (`pyarrow`) + métadonnées JSON |
+| Cache étage 1 (HTTP) | **`requests` + `requests-cache`** |
+| Nom PyPI / import | `endurancepy` |
+| Branche par défaut | `main` |
+| Plancher Python | 3.10 |
 
 ---
 
