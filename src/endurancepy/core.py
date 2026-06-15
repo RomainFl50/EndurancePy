@@ -7,6 +7,7 @@ milestones (2.1+) and currently raise :class:`NotImplementedError`.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -17,6 +18,13 @@ if TYPE_CHECKING:
     from endurancepy.events import Series
 
 __all__ = ["CarResult", "Lap", "Laps", "Session", "SessionResults"]
+
+
+def _to_list(value: Any) -> list[Any]:
+    """Wrap a scalar in a list; pass through (non-string) iterables as a list."""
+    if isinstance(value, str) or not isinstance(value, Iterable):
+        return [value]
+    return list(value)
 
 
 class Laps(pd.DataFrame):
@@ -45,57 +53,100 @@ class Laps(pd.DataFrame):
 
     # -- filtering (FastF1 parity) ------------------------------------------
     def pick_drivers(self, identifiers: Any) -> Laps:
-        """Return the laps driven by one or more drivers."""
-        raise NotImplementedError
+        """Return the laps of one or more drivers (by number or name)."""
+        ids = [str(i) for i in _to_list(identifiers)]
+        mask = self["DriverNumber"].isin(ids) | self["Driver"].isin(ids)
+        return self[mask]
 
     def pick_teams(self, names: Any) -> Laps:
         """Return the laps of one or more teams."""
-        raise NotImplementedError
+        return self[self["Team"].isin([str(n) for n in _to_list(names)])]
 
     def pick_laps(self, lap_numbers: Any) -> Laps:
         """Return laps matching one or more lap numbers."""
-        raise NotImplementedError
+        nums = [int(n) for n in _to_list(lap_numbers)]
+        return self[self["LapNumber"].isin(nums)]
 
     def pick_fastest(self, only_by_time: bool = False) -> Lap | None:
-        """Return the fastest lap, or ``None`` if there is none."""
-        raise NotImplementedError
+        """Return the fastest lap, or ``None`` if there is none.
+
+        By default only laps flagged as a personal best are considered (a faster
+        lap not marked best was likely deleted). With ``only_by_time=True`` the
+        lowest lap time is returned outright.
+        """
+        candidates = self if only_by_time else self[self._truthy("IsPersonalBest")]
+        candidates = candidates[candidates["LapTime"].notna()]
+        if len(candidates) == 0:
+            return None
+        return candidates.loc[candidates["LapTime"].idxmin()]
 
     def pick_quicklaps(self, threshold: float | None = None) -> Laps:
         """Return laps quicker than ``threshold`` times the best lap time."""
-        raise NotImplementedError
+        coefficient = self.QUICKLAP_THRESHOLD if threshold is None else threshold
+        fastest = self["LapTime"].min()
+        if pd.isna(fastest):
+            return self.iloc[0:0]
+        return self[self["LapTime"] <= fastest * coefficient]
 
     def pick_track_status(self, status: str, how: str = "equals") -> Laps:
-        """Return laps set under a given track status."""
-        raise NotImplementedError
+        """Return laps set under a given track status (e.g. ``"GF"``, ``"FCY"``)."""
+        values = self["TrackStatus"].fillna("")
+        if how == "equals":
+            mask = values == status
+        elif how == "contains":
+            mask = values.str.contains(status, regex=False)
+        elif how == "excludes":
+            mask = ~values.str.contains(status, regex=False)
+        elif how == "any":
+            mask = values.apply(lambda v: any(c in v for c in status))
+        elif how == "none":
+            mask = values.apply(lambda v: not any(c in v for c in status))
+        else:
+            raise ValueError(f"Invalid value for 'how': {how!r}")
+        return self[mask]
 
     def pick_wo_box(self) -> Laps:
         """Return laps that are neither in-laps nor out-laps."""
-        raise NotImplementedError
+        return self[self["PitInTime"].isna() & self["PitOutTime"].isna()]
 
     def pick_box_laps(self, which: str = "both") -> Laps:
-        """Return in-laps and/or out-laps."""
-        raise NotImplementedError
+        """Return in-laps (``"in"``), out-laps (``"out"``) or both."""
+        if which == "in":
+            mask = self["PitInTime"].notna()
+        elif which == "out":
+            mask = self["PitOutTime"].notna()
+        elif which == "both":
+            mask = self["PitInTime"].notna() | self["PitOutTime"].notna()
+        else:
+            raise ValueError(f"Invalid value for 'which': {which!r}")
+        return self[mask]
 
     def pick_accurate(self) -> Laps:
         """Return laps that pass the accuracy validation check."""
-        raise NotImplementedError
+        return self[self._truthy("IsAccurate")]
 
     # -- filtering (endurance additions) ------------------------------------
     def pick_cars(self, numbers: Any) -> Laps:
         """Return the laps of one or more cars (by car number)."""
-        raise NotImplementedError
+        return self[self["CarNumber"].isin([str(n) for n in _to_list(numbers)])]
 
     def pick_classes(self, classes: Any) -> Laps:
         """Return the laps of one or more classes (e.g. ``"HYPERCAR"``)."""
-        raise NotImplementedError
+        values = [str(c).upper() for c in _to_list(classes)]
+        return self[self["Class"].str.upper().isin(values)]
 
     def pick_manufacturers(self, names: Any) -> Laps:
         """Return the laps of one or more manufacturers."""
-        raise NotImplementedError
+        values = [str(n).upper() for n in _to_list(names)]
+        return self[self["Manufacturer"].str.upper().isin(values)]
 
     def pick_stints(self, numbers: Any) -> Laps:
         """Return the laps belonging to one or more stints."""
-        raise NotImplementedError
+        return self[self["Stint"].isin([float(n) for n in _to_list(numbers)])]
+
+    def _truthy(self, column: str) -> pd.Series:
+        """Boolean mask for a nullable-boolean column (``NA`` treated as False)."""
+        return self[column].fillna(False).astype(bool)
 
 
 class Lap(pd.Series):
@@ -127,7 +178,8 @@ class SessionResults(pd.DataFrame):
 
     def pick_classes(self, classes: Any) -> SessionResults:
         """Return the results restricted to one or more classes."""
-        raise NotImplementedError
+        values = [str(c).upper() for c in _to_list(classes)]
+        return self[self["Class"].str.upper().isin(values)]
 
 
 class CarResult(pd.Series):

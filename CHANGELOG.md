@@ -34,5 +34,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     encoding, optional `Hour N`) and a cache-aware `download`.
   - Offline tests covering URL building, Parquet round-trips and the
     download path.
+- Analysis CSV parser (milestone 2.2 — the core):
+  - `alkamel.timeparse`: tolerant duration parsing (`SS.mmm` / `M:SS.mmm` /
+    `H:MM:SS.mmm`, including the >24h rollover).
+  - `alkamel.headers.read_alkamel_csv`: tolerant CSV reading (BOM, leading-space
+    headers, trailing separator, all values as stripped strings).
+  - `alkamel.analysis.to_laps`/`read_analysis`: map the Analysis CSV to `Laps`
+    and derive `Stint`, `PitInTime`/`PitOutTime`, `LapStartTime`, the cumulative
+    `SectorNSessionTime`, overall and in-class `Position`, `IsPersonalBest`,
+    `IsAccurate` and `DriverChange`. (Gaps, `Hour` and `LapStartDate` need
+    session context and are filled later.)
+  - `Laps.pick_*` filters implemented: `pick_cars`, `pick_classes`,
+    `pick_manufacturers`, `pick_stints`, `pick_drivers`, `pick_teams`,
+    `pick_laps`, `pick_fastest`, `pick_quicklaps`, `pick_track_status`,
+    `pick_wo_box`, `pick_box_laps`, `pick_accurate`; plus
+    `SessionResults.pick_classes`.
+  - Synthetic Analysis-CSV fixture and tests (multi-class, multi-driver, a pit
+    stop and an FCY lap).
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main
