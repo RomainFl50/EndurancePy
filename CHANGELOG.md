@@ -73,6 +73,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Raises `SessionNotAvailableError` when no source is given and the laps are
     not cached. (Automatic discovery of remote files and the `Event`/
     `EventSchedule` layer remain to be implemented.)
+- Automatic discovery in `Session.load` (milestone 2.9):
+  - `Session.load(season="<NN_YYYY>")` downloads the portal `?season=` index,
+    fuzzy-matches the event and session names, and downloads the Analysis,
+    Classification and Weather CSVs automatically (latest hour for races).
+  - `discovery.resolve_session_files` / `fetch_index`; `Series.keyword` to
+    select the right series folder.
+  - Offline tests for the resolution logic; a `network`-marked end-to-end
+    integration test (self-skips when the portal is unreachable) plus a manual
+    `integration` GitHub Actions workflow to run it on a networked runner.
 - Race Classification parser (milestone 2.8):
   - `alkamel.classification.read_classification`/`to_results`: parse the race
     Classification CSV (`POSITION;NUMBER;TEAM;DRIVER_1..5;VEHICLE;CLASS;STATUS;
