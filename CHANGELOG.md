@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-06-16
+
+First release: load endurance racing timing & results data (WEC, ELMS, AsLMS,
+Le Mans Cup, IMSA) from the Al Kamel archives, with a FastF1-style API.
+
 ### Fixed
 
 - Discovery: decode (`unquote`) the portal's percent-encoded result paths so
@@ -134,4 +139,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `list_classes`/`list_manufacturers` and `setup_mpl` (needs the `plot`
     extra). Colours are organised by class and manufacturer rather than driver.
 
-[Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main
+[Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/RomainFl50/EndurancePy/releases/tag/v0.1.0
