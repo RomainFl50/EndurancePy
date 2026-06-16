@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Examples (`examples/`): `quickstart.py` and `quickstart.ipynb` (load a real
+  session via `season=`), `lap_analysis.py` (offline analysis of a local
+  Analysis CSV) and `plot_pace_by_class.py` (green-flag pace box plot). The
+  offline examples are executed in the test suite so they don't rot.
+- Top-level convenience re-exports: `read_analysis`, `read_classification`,
+  `read_weather`.
 - Project groundwork: MIT `LICENSE`, `README`, `.gitignore`.
 - Design documentation:
   - `docs/analyse_fastf1.md` — exhaustive inventory of FastF1's content and its
