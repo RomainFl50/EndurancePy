@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Championship standings (milestone 3.1): `compute_standings(results, ...)`
+  aggregates points across rounds into a `Standings` table — configurable points
+  system (named / sequence / mapping), `by` car/crew/team/manufacturer, overall
+  or `per_class`. A generic calculator, not a replica of any series' exact rules.
+  Exposed as `ep.compute_standings` / `ep.Standings`.
 - Event schedule (milestone 3.0): `get_event_schedule(year, series, season=...)`
   builds an `EventSchedule` (one row per event: round, name, date, sessions)
   from a season's discovered files; `get_event(...)`, `EventSchedule`

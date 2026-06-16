@@ -34,6 +34,7 @@ from endurancepy.events import (
     get_session,
 )
 from endurancepy.logger import set_log_level
+from endurancepy.standings import Standings, compute_standings
 
 try:
     __version__ = version("endurancepy")
@@ -45,7 +46,9 @@ __all__ = [
     "Event",
     "EventSchedule",
     "Series",
+    "Standings",
     "__version__",
+    "compute_standings",
     "get_event",
     "get_event_schedule",
     "get_session",

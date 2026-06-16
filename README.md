@@ -106,7 +106,7 @@ See the **[usage guide](docs/usage.md)** and runnable **[examples/](examples/)**
 - [x] Auto-discovery: `Session.load(season=...)` finds & downloads the files
 - [x] `Event` / `EventSchedule` (season calendars from a season id)
 - [x] `plotting` colour helpers (by class / manufacturer)
-- [ ] Championship standings module
+- [x] Championship standings (configurable points calculator)
 - [ ] Docs, tests, packaging & PyPI release
 
 ## How it relates to FastF1
