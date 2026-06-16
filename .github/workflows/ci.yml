@@ -7,15 +7,10 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
-# NOTE: the lint/type/test jobs are gated on the presence of `pyproject.toml`.
-# Until the package skeleton lands (milestone 2.0), they are skipped and CI
-# stays green; they activate automatically once `pyproject.toml` exists.
-
 jobs:
   lint:
     name: Lint & type-check
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('pyproject.toml') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,7 +30,6 @@ jobs:
   test:
     name: Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('pyproject.toml') != '' }}
     strategy:
       fail-fast: false
       matrix:
