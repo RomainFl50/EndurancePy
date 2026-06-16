@@ -104,7 +104,7 @@ See the **[usage guide](docs/usage.md)** and runnable **[examples/](examples/)**
 - [x] Weather CSV parser + result-file discovery (verified formats)
 - [x] Race Classification CSV parser → `SessionResults`
 - [x] Auto-discovery: `Session.load(season=...)` finds & downloads the files
-- [ ] `Event` / `EventSchedule` (season calendars)
+- [x] `Event` / `EventSchedule` (season calendars from a season id)
 - [x] `plotting` colour helpers (by class / manufacturer)
 - [ ] Championship standings module
 - [ ] Docs, tests, packaging & PyPI release

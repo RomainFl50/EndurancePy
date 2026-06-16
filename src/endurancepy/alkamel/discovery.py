@@ -11,6 +11,7 @@ tree menu, not scrapeable from static HTML); callers provide the season id.
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -23,6 +24,8 @@ from endurancepy.exceptions import SessionNotAvailableError
 _RESULTS_RE = re.compile(r"Results/[^\"'<>]+?\.CSV", re.IGNORECASE)
 _HOUR_RE = re.compile(r"Hour\s*(\d+)", re.IGNORECASE)
 _SESSION_PREFIX_RE = re.compile(r"^\d+_(.*)$")
+_SESSION_TS_RE = re.compile(r"^(\d{12})_")
+_EVENT_PREFIX_RE = re.compile(r"^(\d+)_(.*)$")
 
 
 def _kind(filename: str) -> str:
@@ -192,3 +195,57 @@ def fetch_index(host: str, season: str, event: str | None = None) -> list[Result
         url += f"&evvent={quote(event)}"
     html = download(url).decode("utf-8", "replace")
     return index_page(html)
+
+
+def session_datetime(session_folder: str) -> dt.datetime | None:
+    """Parse the ``YYYYMMDDHHMM`` timestamp prefix of a session folder."""
+    match = _SESSION_TS_RE.match(session_folder)
+    if not match:
+        return None
+    try:
+        return dt.datetime.strptime(match.group(1), "%Y%m%d%H%M")
+    except ValueError:
+        return None
+
+
+@dataclass(frozen=True)
+class EventInfo:
+    """A single event (meeting) derived from the discovered result files."""
+
+    round: int | None
+    name: str
+    date: dt.datetime | None
+    sessions: tuple[str, ...]
+    event_folder: str
+
+
+def build_events(
+    records: list[ResultFile], *, series_keyword: str | None = None
+) -> list[EventInfo]:
+    """Group discovered records into events, ordered by round number."""
+    pool = records
+    if series_keyword is not None:
+        pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
+
+    by_event: dict[str, list[ResultFile]] = {}
+    for record in pool:
+        by_event.setdefault(record.event, []).append(record)
+
+    events = []
+    for event_folder, recs in by_event.items():
+        match = _EVENT_PREFIX_RE.match(event_folder)
+        round_number = int(match.group(1)) if match else None
+        name = match.group(2) if match else event_folder
+        sessions = tuple(dict.fromkeys(_session_label(r.session) for r in recs))
+        dates = [d for d in (session_datetime(r.session) for r in recs) if d]
+        events.append(
+            EventInfo(
+                round=round_number,
+                name=name,
+                date=max(dates) if dates else None,
+                sessions=sessions,
+                event_folder=event_folder,
+            )
+        )
+    events.sort(key=lambda e: (e.round if e.round is not None else 9999, e.name))
+    return events
