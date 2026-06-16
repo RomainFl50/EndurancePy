@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Discovery: decode (`unquote`) the portal's percent-encoded result paths so
+  built URLs are encoded exactly once (no more `%2520`), and make event/session
+  matching prefer substring containment then `partial_ratio` (short queries like
+  `"Spa"` no longer mis-resolve). Verified end-to-end against the live portal.
+
 ### Added
 
 - Project groundwork: MIT `LICENSE`, `README`, `.gitignore`.
