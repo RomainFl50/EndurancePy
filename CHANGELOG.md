@@ -73,5 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Raises `SessionNotAvailableError` when no source is given and the laps are
     not cached. (Automatic discovery of remote files and the `Event`/
     `EventSchedule` layer remain to be implemented.)
+- Plotting colour helpers (milestone 2.6):
+  - `plotting.get_class_color` / `get_manufacturer_color` (pure functions
+    returning hex colours, case-insensitive, with a default fallback) plus
+    `list_classes`/`list_manufacturers` and `setup_mpl` (needs the `plot`
+    extra). Colours are organised by class and manufacturer rather than driver.
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main
