@@ -51,5 +51,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `SessionResults.pick_classes`.
   - Synthetic Analysis-CSV fixture and tests (multi-class, multi-driver, a pit
     stop and an FCY lap).
+- Session results from laps (milestone 2.3):
+  - `results.from_laps`: reconstructs `SessionResults` (one row per car/crew)
+    from the laps — final order by laps then total time, overall and per class,
+    with each car's `Crew`, `BestLapTime`, lap count and total time. (The
+    Classification-CSV parser is deferred until its format is verified.)
+  - `Session.results` now derives from `laps` when available; `Session.cars`
+    (finishing order) and `Session.get_car` implemented.
+  - Added `Crew` and `BestLapTime` to the results schema; tests for the
+    derivation and the session car helpers.
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main

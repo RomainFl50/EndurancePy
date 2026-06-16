@@ -168,6 +168,10 @@ class SessionResults(pd.DataFrame):
 
     _metadata = ["session"]
 
+    def __init__(self, *args: Any, session: Session | None = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.session = session
+
     @property
     def _constructor(self) -> type[SessionResults]:
         return SessionResults
@@ -244,11 +248,19 @@ class Session:
 
     @property
     def results(self) -> SessionResults:
-        """Session classification. Available after :meth:`load`."""
+        """Session classification (per car & per class).
+
+        Derived from :attr:`laps` (final order by laps then total time) when not
+        provided directly. Available once lap data is loaded.
+        """
         if self._results is None:
-            raise DataNotLoadedError(
-                "Results are not loaded; call Session.load() first."
-            )
+            if self._laps is None:
+                raise DataNotLoadedError(
+                    "Results are not loaded; call Session.load() first."
+                )
+            from endurancepy.results import from_laps
+
+            self._results = from_laps(self._laps, session=self)
         return self._results
 
     @property
@@ -271,10 +283,14 @@ class Session:
 
     @property
     def cars(self) -> list[str]:
-        """Car numbers that took part in the session (endurance equivalent of
-        FastF1's ``Session.drivers``). Available after :meth:`load`."""
-        raise NotImplementedError
+        """Car numbers that took part, in finishing order (endurance equivalent
+        of FastF1's ``Session.drivers``). Available once lap data is loaded."""
+        return [str(number) for number in self.results["CarNumber"].tolist()]
 
     def get_car(self, number: str) -> CarResult:
         """Return the :class:`CarResult` for a given car number."""
-        raise NotImplementedError
+        results = self.results
+        match = results[results["CarNumber"] == str(number)]
+        if len(match) == 0:
+            raise ValueError(f"No car {number!r} in this session")
+        return match.iloc[0]
