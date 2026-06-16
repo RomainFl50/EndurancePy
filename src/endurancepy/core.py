@@ -238,25 +238,28 @@ class Session:
         messages: bool = True,
         source: bytes | str | os.PathLike[str] | None = None,
         weather_source: bytes | str | os.PathLike[str] | None = None,
+        results_source: bytes | str | os.PathLike[str] | None = None,
     ) -> None:
-        """Load the session's lap data, then derive results and track status.
+        """Load the session's data.
 
         Parameters
         ----------
         laps:
-            Load lap data (``results`` and ``track_status`` are derived from it
-            on access).
+            Load lap data. ``results`` and ``track_status`` are derived from it
+            on access unless an explicit ``results_source`` is given.
         weather:
             Load weather data when ``weather_source`` is provided.
         messages:
             Accepted for FastF1 API compatibility; not loaded yet.
         source:
-            Where to read the Analysis CSV from: raw ``bytes``, a filesystem
-            path, or an ``http(s)`` URL. When omitted, the parsed laps are loaded
-            from the cache if present; automatic discovery of the remote file is
-            not implemented yet.
+            Analysis CSV to read laps from: raw ``bytes``, a filesystem path, or
+            an ``http(s)`` URL. When omitted, the parsed laps are loaded from the
+            cache if present; automatic discovery is not implemented yet.
         weather_source:
             Optional Weather CSV (``bytes`` / path / URL) for ``weather_data``.
+        results_source:
+            Optional Classification CSV (``bytes`` / path / URL) for ``results``.
+            When omitted, results are derived from the laps.
 
         Raises
         ------
@@ -267,13 +270,23 @@ class Session:
             from endurancepy.alkamel.weather import read_weather
 
             self._weather_data = read_weather(self._read_source(weather_source))
-        if not laps:
-            return
+        if laps:
+            self._load_laps(source)
+        if results_source is not None:
+            from endurancepy.alkamel.classification import read_classification
+
+            self._results = read_classification(
+                self._read_source(results_source), session=self
+            )
+
+    def _load_laps(self, source: bytes | str | os.PathLike[str] | None) -> None:
         key = self._cache_key()
         if source is None:
             cached = Cache.load_dataframe(key)
             if cached is not None:
                 self._laps = Laps(cached, session=self)
+                self._results = None
+                self._track_status = None
                 return
             raise SessionNotAvailableError(
                 "Automatic discovery of Al Kamel result files is not implemented "

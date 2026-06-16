@@ -73,6 +73,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Raises `SessionNotAvailableError` when no source is given and the laps are
     not cached. (Automatic discovery of remote files and the `Event`/
     `EventSchedule` layer remain to be implemented.)
+- Race Classification parser (milestone 2.8):
+  - `alkamel.classification.read_classification`/`to_results`: parse the race
+    Classification CSV (`POSITION;NUMBER;TEAM;DRIVER_1..5;VEHICLE;CLASS;STATUS;
+    LAPS;TOTAL_TIME;FL_TIME;...`) into `SessionResults`, handling the
+    apostrophe time format (`5:44'41.101`) and deriving per-class positions and
+    each car's crew/manufacturer. Tolerant of the wider practice/qualifying
+    layouts (missing columns left empty).
+  - `Session.load(results_source=...)` populates `results` from a Classification
+    CSV (otherwise results are derived from the laps).
 - Weather parser & file discovery (milestone 2.7), based on the **verified**
   real Al Kamel formats (captured via a one-off GitHub Actions probe, since the
   development sandbox cannot reach the portal):

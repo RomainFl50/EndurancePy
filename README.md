@@ -100,8 +100,9 @@ See the **[usage guide](docs/usage.md)** for more.
 - [x] `SessionResults` (per car & per class), derived from laps
 - [x] Track-status timeline (flags / FCY / SC / code 60)
 - [x] `Session.load` from a file/bytes/URL + parsed-laps caching
-- [ ] Automatic discovery of remote files + `Event` / `EventSchedule`
-- [ ] Classification & weather CSV parsers (pending verified format)
+- [x] Weather CSV parser + result-file discovery (verified formats)
+- [x] Race Classification CSV parser → `SessionResults`
+- [ ] Automatic discovery wiring in `Session.load` + `Event` / `EventSchedule`
 - [x] `plotting` colour helpers (by class / manufacturer)
 - [ ] Championship standings module
 - [ ] Docs, tests, packaging & PyPI release
