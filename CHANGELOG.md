@@ -73,6 +73,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Raises `SessionNotAvailableError` when no source is given and the laps are
     not cached. (Automatic discovery of remote files and the `Event`/
     `EventSchedule` layer remain to be implemented.)
+- Weather parser & file discovery (milestone 2.7), based on the **verified**
+  real Al Kamel formats (captured via a one-off GitHub Actions probe, since the
+  development sandbox cannot reach the portal):
+  - `alkamel.weather.read_weather`/`to_weather`: parse the Weather CSV
+    (`TIME_UTC_SECONDS;TIME_UTC_STR;AIR_TEMP;TRACK_TEMP;HUMIDITY;PRESSURE;
+    WIND_SPEED;WIND_DIRECTION`) into FastF1-style `weather_data` (`Time`
+    relative to the first sample; `Rainfall` not provided).
+  - `alkamel.discovery`: parse a portal `?season=` page into structured
+    `ResultFile` records (season/event/series/session/hour/kind + URL builder)
+    by reading the embedded `Results/...CSV` paths.
+  - `Session.load(weather_source=...)` populates `weather_data`.
+  - Confirmed the Analysis CSV format (old & modern) and the Classification CSV
+    headers (race `05_`, practice `03_`, qualifying `90_`) against real files.
 - Plotting colour helpers (milestone 2.6):
   - `plotting.get_class_color` / `get_manufacturer_color` (pure functions
     returning hex colours, case-insensitive, with a default fallback) plus
