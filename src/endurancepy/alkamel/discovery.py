@@ -15,8 +15,13 @@ import re
 from dataclasses import dataclass
 from urllib.parse import quote
 
+from rapidfuzz import fuzz
+
+from endurancepy.exceptions import SessionNotAvailableError
+
 _RESULTS_RE = re.compile(r"Results/[^\"'<>]+?\.CSV", re.IGNORECASE)
 _HOUR_RE = re.compile(r"Hour\s*(\d+)", re.IGNORECASE)
+_SESSION_PREFIX_RE = re.compile(r"^\d+_(.*)$")
 
 
 def _kind(filename: str) -> str:
@@ -107,3 +112,64 @@ def find_files(
         return True
 
     return [record for record in records if matches(record)]
+
+
+def _session_label(session_folder: str) -> str:
+    """Strip the timestamp prefix from a session folder (``201905041330_Race``)."""
+    match = _SESSION_PREFIX_RE.match(session_folder)
+    return match.group(1) if match else session_folder
+
+
+def _best_match(query: str, candidates: list[str], *, label=lambda c: c) -> str:
+    if not candidates:
+        raise SessionNotAvailableError(f"No candidates to match {query!r} against.")
+    return max(candidates, key=lambda c: fuzz.WRatio(query, label(c)))
+
+
+def resolve_session_files(
+    records: list[ResultFile],
+    *,
+    event: str,
+    session: str,
+    series_keyword: str | None = None,
+) -> dict[str, ResultFile]:
+    """Pick the Analysis/Classification/Weather file for the best-matching session.
+
+    The event and session are fuzzy-matched against the discovered folder names.
+    For multi-hour races, the latest hour is chosen for each file kind.
+    """
+    pool = records
+    if series_keyword is not None:
+        pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
+    if not pool:
+        raise SessionNotAvailableError("No matching result files were discovered.")
+
+    chosen_event = _best_match(event, list(dict.fromkeys(r.event for r in pool)))
+    pool = [r for r in pool if r.event == chosen_event]
+
+    chosen_session = _best_match(
+        session,
+        list(dict.fromkeys(r.session for r in pool)),
+        label=_session_label,
+    )
+    pool = [r for r in pool if r.session == chosen_session]
+
+    resolved: dict[str, ResultFile] = {}
+    for kind in ("analysis", "classification", "weather"):
+        matching = [r for r in pool if r.kind == kind]
+        if matching:
+            resolved[kind] = max(
+                matching, key=lambda r: r.hour if r.hour is not None else -1
+            )
+    return resolved
+
+
+def fetch_index(host: str, season: str, event: str | None = None) -> list[ResultFile]:
+    """Download a portal ``?season=`` page and parse it into ResultFile records."""
+    from endurancepy.alkamel.client import download
+
+    url = f"https://{host}/?season={quote(season)}"
+    if event is not None:
+        url += f"&evvent={quote(event)}"
+    html = download(url).decode("utf-8", "replace")
+    return index_page(html)

@@ -102,7 +102,8 @@ See the **[usage guide](docs/usage.md)** for more.
 - [x] `Session.load` from a file/bytes/URL + parsed-laps caching
 - [x] Weather CSV parser + result-file discovery (verified formats)
 - [x] Race Classification CSV parser → `SessionResults`
-- [ ] Automatic discovery wiring in `Session.load` + `Event` / `EventSchedule`
+- [x] Auto-discovery: `Session.load(season=...)` finds & downloads the files
+- [ ] `Event` / `EventSchedule` (season calendars)
 - [x] `plotting` colour helpers (by class / manufacturer)
 - [ ] Championship standings module
 - [ ] Docs, tests, packaging & PyPI release

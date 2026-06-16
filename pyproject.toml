@@ -71,8 +71,8 @@ src = ["src", "tests"]
 select = ["E", "F", "I", "UP", "B", "W"]
 
 [tool.ruff.lint.per-file-ignores]
-# Test contains long, literal Al Kamel result paths used as fixtures.
-"tests/test_discovery.py" = ["E501"]
+# Tests contain long, literal Al Kamel result paths used as fixtures.
+"tests/test_discovery*.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"

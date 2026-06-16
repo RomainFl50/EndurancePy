@@ -239,6 +239,7 @@ class Session:
         source: bytes | str | os.PathLike[str] | None = None,
         weather_source: bytes | str | os.PathLike[str] | None = None,
         results_source: bytes | str | os.PathLike[str] | None = None,
+        season: str | None = None,
     ) -> None:
         """Load the session's data.
 
@@ -248,24 +249,31 @@ class Session:
             Load lap data. ``results`` and ``track_status`` are derived from it
             on access unless an explicit ``results_source`` is given.
         weather:
-            Load weather data when ``weather_source`` is provided.
+            Load weather data (from ``weather_source`` or via ``season``).
         messages:
             Accepted for FastF1 API compatibility; not loaded yet.
         source:
             Analysis CSV to read laps from: raw ``bytes``, a filesystem path, or
             an ``http(s)`` URL. When omitted, the parsed laps are loaded from the
-            cache if present; automatic discovery is not implemented yet.
+            cache if present.
         weather_source:
             Optional Weather CSV (``bytes`` / path / URL) for ``weather_data``.
         results_source:
             Optional Classification CSV (``bytes`` / path / URL) for ``results``.
             When omitted, results are derived from the laps.
+        season:
+            Al Kamel season id (e.g. ``"08_2018-2019"``). When given, the event's
+            files are discovered from the portal and downloaded automatically
+            (the event/session are fuzzy-matched against this session's names).
 
         Raises
         ------
         SessionNotAvailableError
             If ``source`` is omitted and the laps are not in the cache.
         """
+        if season is not None:
+            self._load_via_discovery(season, laps=laps, weather=weather)
+            return
         if weather and weather_source is not None:
             from endurancepy.alkamel.weather import read_weather
 
@@ -289,9 +297,9 @@ class Session:
                 self._track_status = None
                 return
             raise SessionNotAvailableError(
-                "Automatic discovery of Al Kamel result files is not implemented "
-                "yet. Pass source=<path|bytes|url> to Session.load(), or parse a "
-                "file directly with endurancepy.alkamel.analysis.read_analysis()."
+                "No laps in cache. Pass source=<path|bytes|url> or season=<id> to "
+                "Session.load(), or parse a file directly with "
+                "endurancepy.alkamel.analysis.read_analysis()."
             )
         from endurancepy.alkamel.analysis import read_analysis
 
@@ -300,6 +308,35 @@ class Session:
         self._results = None
         self._track_status = None
         Cache.save_dataframe(key, pd.DataFrame(self._laps))
+
+    def _load_via_discovery(self, season: str, *, laps: bool, weather: bool) -> None:
+        from endurancepy.alkamel import discovery
+        from endurancepy.alkamel.analysis import read_analysis
+        from endurancepy.alkamel.classification import read_classification
+        from endurancepy.alkamel.client import download
+        from endurancepy.alkamel.weather import read_weather
+
+        host = self.series.host
+        records = discovery.fetch_index(host, season)
+        files = discovery.resolve_session_files(
+            records,
+            event=str(self.event),
+            session=self.name,
+            series_keyword=self.series.keyword,
+        )
+        if laps and "analysis" in files:
+            self._laps = read_analysis(
+                download(files["analysis"].url(host)), session=self
+            )
+            self._results = None
+            self._track_status = None
+            Cache.save_dataframe(self._cache_key(), pd.DataFrame(self._laps))
+        if "classification" in files:
+            self._results = read_classification(
+                download(files["classification"].url(host)), session=self
+            )
+        if weather and "weather" in files:
+            self._weather_data = read_weather(download(files["weather"].url(host)))
 
     def _cache_key(self) -> str:
         def safe(value: object) -> str:

@@ -39,6 +39,11 @@ class Series(Enum):
         """The base host of the series' Al Kamel results portal."""
         return self.value
 
+    @property
+    def keyword(self) -> str:
+        """A substring identifying this series' folder on the portal."""
+        return _SERIES_KEYWORDS[self]
+
     @classmethod
     def coerce(cls, series: str | Series) -> Series:
         """Coerce a string (e.g. ``"WEC"``) or :class:`Series` into a Series.
@@ -57,6 +62,16 @@ class Series(Enum):
             raise SeriesNotSupportedError(
                 f"Unknown series {series!r}. Supported: {supported}."
             ) from exc
+
+
+#: Substring identifying each series' folder name on the Al Kamel portal.
+_SERIES_KEYWORDS: dict[Series, str] = {
+    Series.WEC: "WEC",
+    Series.ELMS: "European Le Mans",
+    Series.ASLMS: "Asian Le Mans",
+    Series.LMC: "Le Mans Cup",
+    Series.IMSA: "IMSA",
+}
 
 
 class EventSchedule(pd.DataFrame):
