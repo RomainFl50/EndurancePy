@@ -102,7 +102,7 @@ session.track_status          # green / FCY / SC / code 60 / red
 - [x] `Session.load` from a file/bytes/URL + parsed-laps caching
 - [ ] Automatic discovery of remote files + `Event` / `EventSchedule`
 - [ ] Classification & weather CSV parsers (pending verified format)
-- [ ] `plotting` helpers (colours by class / team / manufacturer)
+- [x] `plotting` colour helpers (by class / manufacturer)
 - [ ] Championship standings module
 - [ ] Docs, tests, packaging & PyPI release
 
