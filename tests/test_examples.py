@@ -21,15 +21,27 @@ def _load(name: str) -> ModuleType:
 
 
 def test_lap_analysis_runs(capsys: pytest.CaptureFixture[str]) -> None:
-    module = _load("lap_analysis")
-    laps = module.analyse(_FIXTURE)
+    laps = _load("lap_analysis").analyse(_FIXTURE)
     assert len(laps) == 11
-    assert "laps" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "Classification" in out
+    assert "Stints" in out
+
+
+def test_standings_example_runs(capsys: pytest.CaptureFixture[str]) -> None:
+    standings = _load("standings_example").compute(_FIXTURE)
+    assert len(standings) == 3  # three cars in the fixture
+    assert "Points" in standings.columns
+    assert "Overall standings" in capsys.readouterr().out
 
 
 def test_plot_pace_by_class(tmp_path: Path) -> None:
     pytest.importorskip("matplotlib")
-    module = _load("plot_pace_by_class")
-    output = module.plot(_FIXTURE, tmp_path / "pace.png")
-    assert output.exists()
-    assert output.stat().st_size > 0
+    output = _load("plot_pace_by_class").plot(_FIXTURE, tmp_path / "pace.png")
+    assert output.exists() and output.stat().st_size > 0
+
+
+def test_plot_lap_evolution(tmp_path: Path) -> None:
+    pytest.importorskip("matplotlib")
+    output = _load("plot_lap_evolution").plot(_FIXTURE, tmp_path / "evo.png")
+    assert output.exists() and output.stat().st_size > 0
