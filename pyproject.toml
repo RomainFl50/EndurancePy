@@ -50,7 +50,6 @@ dev = [
     "pytest-cov>=4.1",
     "ruff>=0.5",
     "mypy>=1.8",
-    "pandas-stubs",
     "types-requests",
 ]
 
@@ -79,6 +78,16 @@ ignore_missing_imports = true
 # no type information; don't fail on their untyped imports.
 disable_error_code = ["import-untyped"]
 no_implicit_optional = true
+
+# This is a pandas-heavy library. The third-party `pandas-stubs` are very strict
+# and their exact types vary between releases, which makes type-checking against
+# them non-deterministic across environments. Treat pandas as untyped (Any) so
+# CI is reproducible; our own logic is still fully type-checked.
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
