@@ -274,11 +274,19 @@ class Session:
 
     @property
     def track_status(self) -> pd.DataFrame:
-        """Track/flag status timeline. Available after :meth:`load`."""
+        """Track/flag status timeline (green / FCY / SC / code 60 / red).
+
+        Derived from the laps' finish-line flags when not provided directly.
+        Available once lap data is loaded.
+        """
         if self._track_status is None:
-            raise DataNotLoadedError(
-                "Track status is not loaded; call Session.load() first."
-            )
+            if self._laps is None:
+                raise DataNotLoadedError(
+                    "Track status is not loaded; call Session.load() first."
+                )
+            from endurancepy.track_status import from_laps
+
+            self._track_status = from_laps(self._laps)
         return self._track_status
 
     @property
