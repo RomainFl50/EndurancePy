@@ -237,28 +237,36 @@ class Session:
         weather: bool = True,
         messages: bool = True,
         source: bytes | str | os.PathLike[str] | None = None,
+        weather_source: bytes | str | os.PathLike[str] | None = None,
     ) -> None:
         """Load the session's lap data, then derive results and track status.
 
         Parameters
         ----------
         laps:
-            Load lap data (the only data currently loaded; ``results`` and
-            ``track_status`` are derived from it on access).
-        weather, messages:
-            Accepted for FastF1 API compatibility; not loaded yet (the weather
-            and race-control parsers are deferred until their format is verified).
+            Load lap data (``results`` and ``track_status`` are derived from it
+            on access).
+        weather:
+            Load weather data when ``weather_source`` is provided.
+        messages:
+            Accepted for FastF1 API compatibility; not loaded yet.
         source:
             Where to read the Analysis CSV from: raw ``bytes``, a filesystem
             path, or an ``http(s)`` URL. When omitted, the parsed laps are loaded
             from the cache if present; automatic discovery of the remote file is
             not implemented yet.
+        weather_source:
+            Optional Weather CSV (``bytes`` / path / URL) for ``weather_data``.
 
         Raises
         ------
         SessionNotAvailableError
             If ``source`` is omitted and the laps are not in the cache.
         """
+        if weather and weather_source is not None:
+            from endurancepy.alkamel.weather import read_weather
+
+            self._weather_data = read_weather(self._read_source(weather_source))
         if not laps:
             return
         key = self._cache_key()
