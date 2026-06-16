@@ -12,8 +12,9 @@ tree menu, not scrapeable from static HTML); callers provide the season id.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from rapidfuzz import fuzz
 
@@ -60,6 +61,9 @@ def parse_results_paths(html: str) -> list[str]:
 
 
 def _parse_path(path: str) -> ResultFile | None:
+    # Portal hrefs are percent-encoded; decode so components are human-readable
+    # (and so url() re-encodes exactly once).
+    path = unquote(path)
     parts = path.split("/")
     # Results / season / event / series / session / [hour ...] / file
     if len(parts) < 6 or parts[0] != "Results":
@@ -120,10 +124,25 @@ def _session_label(session_folder: str) -> str:
     return match.group(1) if match else session_folder
 
 
-def _best_match(query: str, candidates: list[str], *, label=lambda c: c) -> str:
+def _best_match(
+    query: str,
+    candidates: list[str],
+    *,
+    label: Callable[[str], str] = lambda c: c,
+) -> str:
+    """Best match for ``query`` among ``candidates``.
+
+    Prefers case-insensitive substring containment (shortest matching label, the
+    most specific), e.g. ``"Spa"`` -> ``"SPA FRANCORCHAMPS"``; otherwise falls
+    back to ``partial_ratio`` (``WRatio`` does not discriminate short queries).
+    """
     if not candidates:
         raise SessionNotAvailableError(f"No candidates to match {query!r} against.")
-    return max(candidates, key=lambda c: fuzz.WRatio(query, label(c)))
+    needle = query.strip().lower()
+    contains = [c for c in candidates if needle in label(c).lower()]
+    if contains:
+        return min(contains, key=lambda c: len(label(c)))
+    return max(candidates, key=lambda c: fuzz.partial_ratio(needle, label(c).lower()))
 
 
 def resolve_session_files(
