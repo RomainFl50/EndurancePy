@@ -95,11 +95,13 @@ session.track_status          # green / FCY / SC / code 60 / red
 - [x] Inventory FastF1's full content and API surface
 - [x] Map FastF1 features → endurance data availability (Al Kamel)
 - [x] License & project groundwork
-- [ ] Al Kamel results-archive client + cache
-- [ ] `Analysis` CSV parser → `Laps`
-- [ ] `Session` / `Event` / `EventSchedule` objects
-- [ ] `SessionResults` (per car & per class) + classification parsers
-- [ ] Weather & track-status (flags / FCY / SC / code 60)
+- [x] Al Kamel client + two-stage cache
+- [x] `Analysis` CSV parser → `Laps` (+ `pick_*` filters)
+- [x] `SessionResults` (per car & per class), derived from laps
+- [x] Track-status timeline (flags / FCY / SC / code 60)
+- [x] `Session.load` from a file/bytes/URL + parsed-laps caching
+- [ ] Automatic discovery of remote files + `Event` / `EventSchedule`
+- [ ] Classification & weather CSV parsers (pending verified format)
 - [ ] `plotting` helpers (colours by class / team / manufacturer)
 - [ ] Championship standings module
 - [ ] Docs, tests, packaging & PyPI release

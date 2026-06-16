@@ -1,18 +1,22 @@
 """Core data objects: Session, Laps/Lap, SessionResults/CarResult.
 
-These mirror FastF1's ``core`` module. The class structure and public method
-signatures are defined here; the actual data loading and parsing land in later
-milestones (2.1+) and currently raise :class:`NotImplementedError`.
+These mirror FastF1's ``core`` module. :meth:`Session.load` reads an Analysis
+CSV (from a path, bytes or URL) into :attr:`Session.laps`; results and track
+status are derived from the laps on access. Automatic discovery of remote files
+and the weather/race-control parsers are not implemented yet.
 """
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from endurancepy.exceptions import DataNotLoadedError
+from endurancepy.cache import Cache
+from endurancepy.exceptions import DataNotLoadedError, SessionNotAvailableError
 
 if TYPE_CHECKING:
     from endurancepy.events import Series
@@ -232,12 +236,68 @@ class Session:
         laps: bool = True,
         weather: bool = True,
         messages: bool = True,
+        source: bytes | str | os.PathLike[str] | None = None,
     ) -> None:
-        """Download and parse the session's data from the Al Kamel archives.
+        """Load the session's lap data, then derive results and track status.
 
-        Not implemented yet (milestone 2.1+).
+        Parameters
+        ----------
+        laps:
+            Load lap data (the only data currently loaded; ``results`` and
+            ``track_status`` are derived from it on access).
+        weather, messages:
+            Accepted for FastF1 API compatibility; not loaded yet (the weather
+            and race-control parsers are deferred until their format is verified).
+        source:
+            Where to read the Analysis CSV from: raw ``bytes``, a filesystem
+            path, or an ``http(s)`` URL. When omitted, the parsed laps are loaded
+            from the cache if present; automatic discovery of the remote file is
+            not implemented yet.
+
+        Raises
+        ------
+        SessionNotAvailableError
+            If ``source`` is omitted and the laps are not in the cache.
         """
-        raise NotImplementedError
+        if not laps:
+            return
+        key = self._cache_key()
+        if source is None:
+            cached = Cache.load_dataframe(key)
+            if cached is not None:
+                self._laps = Laps(cached, session=self)
+                return
+            raise SessionNotAvailableError(
+                "Automatic discovery of Al Kamel result files is not implemented "
+                "yet. Pass source=<path|bytes|url> to Session.load(), or parse a "
+                "file directly with endurancepy.alkamel.analysis.read_analysis()."
+            )
+        from endurancepy.alkamel.analysis import read_analysis
+
+        data = self._read_source(source)
+        self._laps = read_analysis(data, session=self)
+        self._results = None
+        self._track_status = None
+        Cache.save_dataframe(key, pd.DataFrame(self._laps))
+
+    def _cache_key(self) -> str:
+        def safe(value: object) -> str:
+            return str(value).strip().replace("/", "-").replace(" ", "_")
+
+        return (
+            f"{self.series.name}/{self.year}/{safe(self.event)}/{safe(self.name)}/laps"
+        )
+
+    @staticmethod
+    def _read_source(source: bytes | str | os.PathLike[str]) -> bytes:
+        if isinstance(source, (bytes, bytearray)):
+            return bytes(source)
+        text = str(source)
+        if text.startswith(("http://", "https://")):
+            from endurancepy.alkamel.client import download
+
+            return download(text)
+        return Path(source).read_bytes()
 
     @property
     def laps(self) -> Laps:

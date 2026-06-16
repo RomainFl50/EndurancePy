@@ -66,5 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     raw codes (GF/FCY/SC/SF/FF/Code60/…) to readable statuses.
   - `Session.track_status` now derives from `laps` when available.
   - (The Weather-CSV parser is deferred until its format is verified.)
+- Session loading (milestone 2.5):
+  - `Session.load(source=...)` reads an Analysis CSV from a path, bytes or
+    `http(s)` URL into `Session.laps` (results and track status derive from it);
+    parsed laps are cached as Parquet and reused on a subsequent `load()`.
+  - Raises `SessionNotAvailableError` when no source is given and the laps are
+    not cached. (Automatic discovery of remote files and the `Event`/
+    `EventSchedule` layer remain to be implemented.)
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main
