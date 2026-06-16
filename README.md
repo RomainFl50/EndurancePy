@@ -57,38 +57,38 @@ Ergast — everything else (calendars, sessions, classifications, laps/sectors/
 stints/pit data, weather, flags) is within reach from the public timing
 archives.
 
-## Planned API (preview)
+## Usage
 
-The intended API mirrors FastF1, with an added **series** axis (several
-championships coexist):
+The API mirrors FastF1, with an added **series** axis (several championships
+coexist). Today, a session loads from an Analysis CSV (path, bytes or URL);
+automatic discovery of remote files is not implemented yet.
 
 ```python
 import endurancepy as ep
 
-# Season calendar for a given series
-schedule = ep.get_event_schedule(2024, series="WEC")
+ep.Cache.enable_cache("./endurancepy-cache")
 
-# A specific session
+# Load a session from an Analysis CSV
 session = ep.get_session(2024, series="WEC", event="Le Mans", session="Race")
-session.load()
+session.load(source="path/to/23_Analysis_Race.CSV")
 
 # Classification (per car / per class)
 session.results
 session.results.pick_classes("HYPERCAR")
+session.cars                  # car numbers in finishing order
 
 # Laps
 laps = session.laps
 laps.pick_cars(["7", "8"])
 laps.pick_classes("LMGT3")
-laps.pick_drivers("HARTLEY")
+laps.pick_drivers("Kamui KOBAYASHI")
 fastest = laps.pick_fastest()
 
-# Side data
-session.weather_data
+# Derived side data
 session.track_status          # green / FCY / SC / code 60 / red
 ```
 
-> This is a **preview of the target design**, not yet implemented.
+See the **[usage guide](docs/usage.md)** for more.
 
 ## Roadmap
 
