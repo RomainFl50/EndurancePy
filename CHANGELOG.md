@@ -60,5 +60,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     (finishing order) and `Session.get_car` implemented.
   - Added `Crew` and `BestLapTime` to the results schema; tests for the
     derivation and the session car helpers.
+- Track-status timeline (milestone 2.4):
+  - `track_status.from_laps`: reconstructs the session flag timeline (one row
+    per change) from the laps' finish-line flags, with a flag registry mapping
+    raw codes (GF/FCY/SC/SF/FF/Code60/…) to readable statuses.
+  - `Session.track_status` now derives from `laps` when available.
+  - (The Weather-CSV parser is deferred until its format is verified.)
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/commits/main
