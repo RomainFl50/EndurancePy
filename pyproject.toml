@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "endurancepy"
-version = "0.0.0"
+version = "0.1.0"
 description = "Access endurance racing timing & results data in Python — inspired by FastF1."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -56,6 +56,7 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/RomainFl50/EndurancePy"
 Repository = "https://github.com/RomainFl50/EndurancePy"
+Documentation = "https://github.com/RomainFl50/EndurancePy/tree/main/docs"
 Issues = "https://github.com/RomainFl50/EndurancePy/issues"
 Changelog = "https://github.com/RomainFl50/EndurancePy/blob/main/CHANGELOG.md"
 

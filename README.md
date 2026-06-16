@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="#status"><img alt="Status" src="https://img.shields.io/badge/status-design%20phase-orange"></a>
+  <a href="#status"><img alt="Status" src="https://img.shields.io/badge/status-alpha-yellow"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
 </p>
@@ -46,8 +46,10 @@ convenient, **pandas-based** objects, primarily from the publicly available
 
 ## Status
 
-> ⚠️ **Early / design phase — no runnable code yet.** Contributions are very
-> welcome (see [Contributing](#contributing)).
+> 🟡 **Alpha.** The core works end-to-end (verified against the live portal):
+> sessions, laps, results, schedules, weather, track status, plotting and
+> standings. APIs may still change. Contributions welcome (see
+> [Contributing](#contributing)).
 
 The first goal is explicit: **offer the same content as FastF1 wherever the
 underlying data exists.** Two structural limitations are known up front:
@@ -56,6 +58,15 @@ brake/GPS streams) and **no normalised historical database** equivalent to
 Ergast — everything else (calendars, sessions, classifications, laps/sectors/
 stints/pit data, weather, flags) is within reach from the public timing
 archives.
+
+## Install
+
+```bash
+pip install endurancepy            # once released on PyPI
+pip install "endurancepy[plot]"    # with the plotting extra (matplotlib)
+# from a checkout:
+pip install -e ".[dev]"
+```
 
 ## Usage
 
