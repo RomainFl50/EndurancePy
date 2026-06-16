@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Event schedule (milestone 3.0): `get_event_schedule(year, series, season=...)`
+  builds an `EventSchedule` (one row per event: round, name, date, sessions)
+  from a season's discovered files; `get_event(...)`, `EventSchedule`
+  `get_event_by_round`/`get_event_by_name`, and `Event.get_session`/`get_race`
+  (the returned session carries its season so `load()` needs no `season=`).
+  `discovery.build_events` / `session_datetime` underpin it.
 - Examples (`examples/`): `quickstart.py` and `quickstart.ipynb` (load a real
   session via `season=`), `lap_analysis.py` (offline analysis of a local
   Analysis CSV) and `plot_pace_by_class.py` (green-flag pace box plot). The

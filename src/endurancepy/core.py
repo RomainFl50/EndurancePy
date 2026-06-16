@@ -217,11 +217,13 @@ class Session:
         series: Series,
         event: str | int,
         name: str,
+        default_season: str | None = None,
     ):
         self.year = year
         self.series = series
         self.event = event
         self.name = name
+        self.default_season = default_season
         self._laps: Laps | None = None
         self._results: SessionResults | None = None
         self._weather_data: pd.DataFrame | None = None
@@ -271,6 +273,7 @@ class Session:
         SessionNotAvailableError
             If ``source`` is omitted and the laps are not in the cache.
         """
+        season = season if season is not None else self.default_season
         if season is not None:
             self._load_via_discovery(season, laps=laps, weather=weather)
             return

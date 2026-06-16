@@ -2,18 +2,23 @@
 
 Defines the supported :class:`Series` (each mapped to its Al Kamel results host)
 and the top-level entry points :func:`get_session`, :func:`get_event` and
-:func:`get_event_schedule`. Event discovery and schedule building land in a
-later milestone (2.5) and currently raise :class:`NotImplementedError`.
+:func:`get_event_schedule`.
+
+Season calendars are built by discovering a portal ``?season=`` page (the season
+id, e.g. ``"08_2018-2019"``, is supplied by the caller — the portal's season
+selector is a JS menu that is not scrapeable from static HTML).
 """
 
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 import pandas as pd
+from rapidfuzz import fuzz
 
 from endurancepy.core import Session
-from endurancepy.exceptions import SeriesNotSupportedError
+from endurancepy.exceptions import SeriesNotSupportedError, SessionNotAvailableError
 
 __all__ = [
     "Event",
@@ -73,11 +78,45 @@ _SERIES_KEYWORDS: dict[Series, str] = {
     Series.IMSA: "IMSA",
 }
 
+#: Column dtypes of an :class:`EventSchedule`.
+_SCHEDULE_DTYPES: dict[str, str] = {
+    "RoundNumber": "Int64",
+    "EventName": "string",
+    "EventDate": "datetime64[ns]",
+    "Sessions": "object",
+    "Series": "string",
+    "Season": "string",
+}
+
+
+def _match_name(query: str, candidates: list[str]) -> str:
+    """Best name match: substring containment (shortest), else partial_ratio."""
+    if not candidates:
+        raise SessionNotAvailableError(f"No events to match {query!r} against.")
+    needle = str(query).strip().lower()
+    contains = [c for c in candidates if needle in c.lower()]
+    if contains:
+        return min(contains, key=len)
+    return max(candidates, key=lambda c: fuzz.partial_ratio(needle, c.lower()))
+
 
 class EventSchedule(pd.DataFrame):
     """A season's calendar for a given series (one row per event)."""
 
-    _metadata = ["year", "series"]
+    _metadata = ["year", "series", "season"]
+
+    def __init__(
+        self,
+        *args: Any,
+        year: int = 0,
+        series: Series | None = None,
+        season: str | None = None,
+        **kwargs: Any,
+    ):
+        super().__init__(*args, **kwargs)
+        self.year = year
+        self.series = series
+        self.season = season
 
     @property
     def _constructor(self) -> type[EventSchedule]:
@@ -87,11 +126,23 @@ class EventSchedule(pd.DataFrame):
     def _constructor_sliced(self) -> type[Event]:
         return Event
 
+    def get_event_by_round(self, round_number: int) -> Event:
+        """Return the :class:`Event` with the given round number."""
+        match = self[self["RoundNumber"] == round_number]
+        if len(match) == 0:
+            raise SessionNotAvailableError(f"No event with round {round_number}.")
+        return match.iloc[0]
+
+    def get_event_by_name(self, name: str) -> Event:
+        """Return the :class:`Event` whose name best matches ``name``."""
+        chosen = _match_name(name, [str(n) for n in self["EventName"]])
+        return self[self["EventName"] == chosen].iloc[0]
+
 
 class Event(pd.Series):
     """A single event (race weekend / meeting)."""
 
-    _metadata = ["year", "series"]
+    _metadata = ["year", "series", "season"]
 
     @property
     def _constructor(self) -> type[Event]:
@@ -100,6 +151,24 @@ class Event(pd.Series):
     @property
     def _constructor_expanddim(self) -> type[EventSchedule]:
         return EventSchedule
+
+    def get_session(self, identifier: str | int) -> Session:
+        """Return a :class:`~endurancepy.core.Session` of this event.
+
+        The returned session already knows its season, so ``session.load()`` can
+        discover and download its files without re-specifying ``season``.
+        """
+        return Session(
+            year=self.year,
+            series=self.series,
+            event=str(self["EventName"]),
+            name=str(identifier),
+            default_season=self["Season"],
+        )
+
+    def get_race(self) -> Session:
+        """Return the race session of this event."""
+        return self.get_session("Race")
 
 
 def get_session(
@@ -117,7 +186,7 @@ def get_session(
     series:
         The championship, e.g. ``"WEC"`` or :attr:`Series.WEC`.
     event:
-        Event name (fuzzy-matched) or round number.
+        Event name (fuzzy-matched at load time) or round number.
     session:
         Session name/abbreviation (e.g. ``"Race"``, ``"FP1"``, ``"Q"``).
 
@@ -130,19 +199,52 @@ def get_session(
     return Session(year=year, series=resolved, event=event, name=str(session))
 
 
-def get_event(year: int, series: str | Series, event: str | int) -> Event:
-    """Create an :class:`Event` for a given season, series and event.
+def get_event_schedule(
+    year: int, series: str | Series, *, season: str | None = None
+) -> EventSchedule:
+    """Build the :class:`EventSchedule` for a season of a given series.
 
-    Not implemented yet (milestone 2.5).
+    Parameters
+    ----------
+    year:
+        Season year (for reference/metadata).
+    series:
+        The championship.
+    season:
+        Al Kamel season id, e.g. ``"08_2018-2019"`` (required — see module docs).
     """
-    Series.coerce(series)
-    raise NotImplementedError
+    resolved = Series.coerce(series)
+    if season is None:
+        raise SessionNotAvailableError(
+            "A season id is required, e.g. season='13_2024' "
+            "(the portal's season list is not scrapeable from static HTML)."
+        )
+
+    from endurancepy.alkamel import discovery
+
+    records = discovery.fetch_index(resolved.host, season)
+    events = discovery.build_events(records, series_keyword=resolved.keyword)
+    rows = [
+        {
+            "RoundNumber": event.round,
+            "EventName": event.name,
+            "EventDate": event.date,
+            "Sessions": list(event.sessions),
+            "Series": resolved.name,
+            "Season": season,
+        }
+        for event in events
+    ]
+    frame = pd.DataFrame(rows, columns=list(_SCHEDULE_DTYPES))
+    frame = frame.astype(_SCHEDULE_DTYPES)
+    return EventSchedule(frame, year=year, series=resolved, season=season)
 
 
-def get_event_schedule(year: int, series: str | Series) -> EventSchedule:
-    """Create the :class:`EventSchedule` for a season of a given series.
-
-    Not implemented yet (milestone 2.5).
-    """
-    Series.coerce(series)
-    raise NotImplementedError
+def get_event(
+    year: int, series: str | Series, event: str | int, *, season: str | None = None
+) -> Event:
+    """Build the :class:`Event` best matching ``event`` in the season."""
+    schedule = get_event_schedule(year, series, season=season)
+    if isinstance(event, int):
+        return schedule.get_event_by_round(event)
+    return schedule.get_event_by_name(event)
