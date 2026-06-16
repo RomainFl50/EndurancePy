@@ -1,0 +1,89 @@
+name: probe-alkamel
+
+# Temporary probe: GitHub Actions runners have open internet access, so we use
+# one to verify the real Al Kamel file structure / CSV headers (the sandbox the
+# code is developed in cannot reach the portal). Removed once the format is
+# captured.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/sweet-brahmagupta-0zia6b"]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe Al Kamel
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error, urllib.parse, re
+
+          UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+
+          def get(url, n=8000):
+              req = urllib.request.Request(url, headers=UA)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, r.read(n)
+              except urllib.error.HTTPError as e:
+                  return e.code, b""
+              except Exception as e:
+                  return None, str(e).encode()
+
+          def show_csv(url):
+              st, data = get(url, 4000)
+              print(f"=== CSV {st} {url}")
+              if data:
+                  txt = data.decode("utf-8-sig", "replace")
+                  for i, line in enumerate(txt.splitlines()[:3]):
+                      print(f"    L{i}: {line[:380]}")
+
+          analysis = [
+              "https://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV",
+              "https://fiawec.alkamelsystems.com/Results/14_2025/01_LOSAIL/581_FR%20Middle%20East%20Championship/202502261915_Free%20Practice/23_Analysis_Free%20Practice.CSV",
+          ]
+          print("##### ANALYSIS CSVs #####")
+          for u in analysis:
+              show_csv(u)
+
+          base = ("https://fiawec.alkamelsystems.com/Results/08_2018-2019/"
+                  "07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/")
+          siblings = [
+              "03_Classification_Race_Hour 6.CSV",
+              "03_Classification Nbr_Race_Hour 6.CSV",
+              "03_Classification_Race.CSV",
+              "23_Time Cards_Race_Hour 6.CSV",
+              "26_Weather_Race_Hour 6.CSV",
+              "26_Weather Vivenne_Race_Hour 6.CSV",
+          ]
+          print("##### SIBLING FILE GUESSES #####")
+          for name in siblings:
+              show_csv(base + urllib.parse.quote(name, safe=""))
+
+          print("##### DIRECTORY LISTING (session folder) #####")
+          st, data = get(base, 9000)
+          print(f"=== DIR {st} len={len(data)}")
+          if data:
+              html = data.decode("utf-8", "replace")
+              links = sorted(set(re.findall(r'href="([^"]+)"', html, re.I)))
+              for link in links[:60]:
+                  print("    link:", link[:200])
+
+          print("##### PORTAL PAGES (discovery structure) #####")
+          for u in ["https://fiawec.alkamelsystems.com/",
+                    "https://fiawec.alkamelsystems.com/?season=13_2024"]:
+              st, data = get(u, 12000)
+              print(f"=== PAGE {st} {u} len={len(data)}")
+              if data:
+                  html = data.decode("utf-8", "replace")
+                  for pat in [r'season=([0-9A-Za-z_\-]+)',
+                              r'evvent=([0-9A-Za-z_%\- ]+)',
+                              r'(Results/[^"\'<> ]+)',
+                              r'(\w+\.json)',
+                              r'src="([^"]+\.js)"']:
+                      ms = list(dict.fromkeys(re.findall(pat, html)))[:8]
+                      if ms:
+                          print(f"    {pat} -> {ms}")
+          PY
