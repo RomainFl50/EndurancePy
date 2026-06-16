@@ -9,13 +9,14 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe Al Kamel (v2 - discovery & classification)
+      - name: Probe Al Kamel (v3 - classification headers & season list)
         run: |
           python3 - <<'PY'
           import urllib.request, urllib.error, urllib.parse, re
 
           UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                               "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+          ROOT = "https://fiawec.alkamelsystems.com/"
 
           def get(url, n=600000):
               req = urllib.request.Request(url, headers=UA)
@@ -27,49 +28,35 @@ jobs:
               except Exception as e:
                   return None, str(e).encode()
 
-          def page_links(url):
-              st, data = get(url)
-              print(f"=== PAGE {st} len={len(data)} {url}")
-              if not data:
-                  return
-              html = data.decode("utf-8", "replace")
-              hrefs = re.findall(r'href="([^"]+)"', html, re.I)
-              seasons = sorted({m for m in re.findall(r'season=([^"&\'\\ ]+)', html)})
-              evvents = sorted({m for m in re.findall(r'evvent=([^"&\']+)', html)})
-              results = sorted({m for m in re.findall(r'(Results/[^"\'<> ]+)', html)})
-              csvs = sorted({h for h in hrefs if h.lower().endswith(".csv")})
-              print("   seasons:", seasons[:15])
-              print("   evvents:", evvents[:15])
-              print("   #results_paths:", len(results))
-              for r in results[:40]:
-                  print("      R:", urllib.parse.unquote(r)[:200])
-              print("   #csv_hrefs:", len(csvs))
-              for c in csvs[:40]:
-                  print("      CSV:", urllib.parse.unquote(c)[:200])
+          def show_csv(url, rows=2):
+              st, data = get(url, 4000)
+              print(f"=== CSV {st} {urllib.parse.unquote(url)[-90:]}")
+              if data:
+                  for i, line in enumerate(data.decode("utf-8-sig", "replace").splitlines()[:rows]):
+                      print(f"    L{i}: {line[:380]}")
 
-          print("##### LANDING #####")
-          page_links("https://fiawec.alkamelsystems.com/")
-          print("##### SEASON 2018-2019 #####")
-          page_links("https://fiawec.alkamelsystems.com/?season=08_2018-2019")
-          print("##### SEASON+EVENT SPA 2018 #####")
-          page_links("https://fiawec.alkamelsystems.com/"
-                     + "?season=08_2018-2019&evvent=" + urllib.parse.quote("07_SPA FRANCORCHAMPS"))
+          print("##### CLASSIFICATION HEADERS #####")
+          spa = ("Results/08_2018-2019/07_SPA FRANCORCHAMPS/267_FIA WEC/")
+          for path in [
+              spa + "201905041330_Race/Hour 6/05_Classification_Race_Hour 6.CSV",
+              spa + "201905021200_Free Practice 1/03_Classification_Free Practice 1.CSV",
+              spa + "201905031540_Qualifying/90_Classification_Qualifying.CSV",
+          ]:
+              show_csv(ROOT + urllib.parse.quote(path), rows=3)
 
-          print("##### CLASSIFICATION FILENAME GUESSES #####")
-          base = ("https://fiawec.alkamelsystems.com/Results/08_2018-2019/"
-                  "07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/")
-          hour = base + "Hour%206/"
-          guesses = [
-              hour + urllib.parse.quote("03_Classification Hour_Race_Hour 6.CSV", safe=""),
-              hour + urllib.parse.quote("03_Classification by Class_Race_Hour 6.CSV", safe=""),
-              hour + urllib.parse.quote("06_Classification_Race_Hour 6.CSV", safe=""),
-              hour + urllib.parse.quote("02_Classification_Race_Hour 6.CSV", safe=""),
-              hour + urllib.parse.quote("01_Classification_Race_Hour 6.CSV", safe=""),
-              base + urllib.parse.quote("03_Classification_Race.CSV", safe=""),
-              base + urllib.parse.quote("23_Time Cards_Race.CSV", safe=""),
-          ]
-          for u in guesses:
-              st, data = get(u, 1500)
-              line = data.decode("utf-8-sig", "replace").splitlines()[:1]
-              print(f"   {st} {urllib.parse.unquote(u).split('201905041330_Race/')[-1]} :: {line}")
+          # A modern (2025) classification, discovered from the season page.
+          st, data = get(ROOT + "?season=14_2025")
+          html = data.decode("utf-8", "replace") if data else ""
+          modern = re.findall(r'Results/[^"\']*?Classification[^"\']*?\.CSV', html)
+          print("##### MODERN CLASSIFICATION (2025) #####  found:", len(modern))
+          if modern:
+              show_csv(ROOT + urllib.parse.quote(modern[0]), rows=2)
+
+          print("##### SEASON LIST (landing) #####")
+          st, data = get(ROOT)
+          html = data.decode("utf-8", "replace") if data else ""
+          opts = re.findall(r'<option[^>]*value="([^"]+)"[^>]*>([^<]+)</option>', html)
+          print("   options:", opts[:40])
+          for m in re.findall(r'season["\']?\s*[:=]\s*["\']?([0-9]{2}_[0-9\-]{4,9})', html)[:40]:
+              print("   season-token:", m)
           PY
