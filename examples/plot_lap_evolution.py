@@ -1,30 +1,30 @@
-"""Plot lap-time evolution over a session, coloured by class.
+"""Plot lap-time evolution for a real session (loaded over the network).
 
 Requires the plotting extra (``pip install endurancepy[plot]``). Run with::
 
-    python examples/plot_lap_evolution.py path/to/23_Analysis_Race.CSV out.png
+    python examples/plot_lap_evolution.py
 
-Each clean (green-flag, non-pit) lap is plotted as lap time vs lap number, with
-one colour per class — a quick way to see pace, traffic and degradation.
+Each clean (green-flag, non-pit) lap is plotted as lap time vs lap number, one
+colour per class — a quick look at pace, traffic and degradation. No CSV needed.
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import endurancepy as ep
 from endurancepy import plotting
+from endurancepy.core import Session
 
 
-def plot(analysis_csv: str | Path, output: str | Path = "lap_evolution.png") -> Path:
-    """Render the lap-time evolution scatter and save it to ``output``."""
+def plot(session: Session, output: str | Path = "lap_evolution.png") -> Path:
+    """Render the lap-time evolution scatter for a loaded session."""
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    laps = ep.read_analysis(analysis_csv)
+    laps = session.laps
     clean = laps.pick_wo_box().pick_track_status("GF")
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -32,10 +32,9 @@ def plot(analysis_csv: str | Path, output: str | Path = "lap_evolution.png") -> 
     for class_name in sorted(laps["Class"].dropna().unique()):
         color = plotting.get_class_color(class_name)
         for _, car_laps in clean.pick_classes(class_name).groupby("CarNumber"):
-            seconds = car_laps["LapTime"].dt.total_seconds()
             ax.plot(
                 car_laps["LapNumber"],
-                seconds,
+                car_laps["LapTime"].dt.total_seconds(),
                 ".-",
                 color=color,
                 alpha=0.7,
@@ -54,10 +53,13 @@ def plot(analysis_csv: str | Path, output: str | Path = "lap_evolution.png") -> 
     return output
 
 
+def main() -> None:
+    Path("./endurancepy-cache").mkdir(exist_ok=True)
+    ep.Cache.enable_cache("./endurancepy-cache")
+    session = ep.get_session(2019, "WEC", "Spa", "Race")
+    session.load(season="08_2018-2019")
+    print("Saved", plot(session))
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise SystemExit(
-            "Usage: python examples/plot_lap_evolution.py <Analysis.CSV> [out.png]"
-        )
-    out = sys.argv[2] if len(sys.argv) > 2 else "lap_evolution.png"
-    print("Saved", plot(sys.argv[1], out))
+    main()

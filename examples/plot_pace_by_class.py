@@ -1,30 +1,30 @@
-"""Plot green-flag pace by class from a local Analysis CSV.
+"""Plot green-flag pace by class for a real session (loaded over the network).
 
 Requires the plotting extra (``pip install endurancepy[plot]``). Run with::
 
-    python examples/plot_pace_by_class.py path/to/23_Analysis_Race.CSV out.png
+    python examples/plot_pace_by_class.py
 
-Produces a box plot of clean (green-flag, non-pit) lap times per class, coloured
-with EndurancePy's class palette.
+Box plot of clean (green-flag, non-pit) lap times per class, coloured with
+EndurancePy's class palette. No CSV path needed.
 """
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import endurancepy as ep
 from endurancepy import plotting
+from endurancepy.core import Session
 
 
-def plot(analysis_csv: str | Path, output: str | Path = "pace_by_class.png") -> Path:
-    """Render the pace-by-class box plot and save it to ``output``."""
+def plot(session: Session, output: str | Path = "pace_by_class.png") -> Path:
+    """Render the pace-by-class box plot for a loaded session."""
     import matplotlib
 
     matplotlib.use("Agg")  # headless backend; safe in scripts/CI
     import matplotlib.pyplot as plt
 
-    laps = ep.read_analysis(analysis_csv)
+    laps = session.laps
     clean = laps.pick_wo_box().pick_track_status("GF")
 
     data, labels, colors = [], [], []
@@ -50,10 +50,13 @@ def plot(analysis_csv: str | Path, output: str | Path = "pace_by_class.png") -> 
     return output
 
 
+def main() -> None:
+    Path("./endurancepy-cache").mkdir(exist_ok=True)
+    ep.Cache.enable_cache("./endurancepy-cache")
+    session = ep.get_session(2019, "WEC", "Spa", "Race")
+    session.load(season="08_2018-2019")
+    print("Saved", plot(session))
+
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise SystemExit(
-            "Usage: python examples/plot_pace_by_class.py <Analysis.CSV> [out.png]"
-        )
-    out = sys.argv[2] if len(sys.argv) > 2 else "pace_by_class.png"
-    print("Saved", plot(sys.argv[1], out))
+    main()
