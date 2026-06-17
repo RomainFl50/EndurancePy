@@ -9,7 +9,7 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: Probe event enumeration
+      - name: Probe event names in season page
         run: |
           python3 - <<'PY'
           import urllib.request, urllib.parse, re
@@ -25,20 +25,18 @@ jobs:
                   return None, str(e).encode()
 
           host = "fiawec.alkamelsystems.com"
-          for season in ["08_2018-2019", "09_2019-2020", "13_2024"]:
-              url = f"https://{host}/?season={urllib.parse.quote(season)}"
-              st, data = get(url)
-              html = data.decode("utf-8", "replace") if data else ""
-              print(f"\n===== season={season} status={st} len={len(html)} =====")
-              res_events = sorted(set(re.findall(
-                  r'Results/[^/"\']+/([^/"\']+)/[^"\']+\.CSV', html, re.I)))
-              print("events from Results CSV paths:", res_events)
-              evvents = sorted(set(re.findall(r'evvent=([^"&\'<>]+)', html)))
-              print("evvent= tokens:", [urllib.parse.unquote(e) for e in evvents])
-              m = re.search(r'<select[^>]*name="evvent"[^>]*>(.*?)</select>', html, re.S | re.I)
-              if m:
-                  opts = re.findall(r'value="([^"]*)"', m.group(1))
-                  print("evvent <option> values:", [urllib.parse.unquote(o) for o in opts])
-              else:
-                  print("no <select name=evvent> found")
+          url = f"https://{host}/?season=09_2019-2020"
+          st, data = get(url)
+          html = data.decode("utf-8", "replace")
+          print("status", st, "len", len(html))
+
+          # event-folder-like tokens anywhere (NN_NAME)
+          names = sorted(set(re.findall(r'\b\d{2}_[A-Z0-9][A-Za-z0-9 ._\-]{2,40}', html)))
+          print("NN_NAME tokens:", names)
+
+          for needle in ['evvent', 'formSearch', 'treemenu', 'LayersTree', 'changeEvent', 'onclick']:
+              i = html.lower().find(needle.lower())
+              print(f"\n--- {needle} @ {i} ---")
+              if i >= 0:
+                  print(repr(html[i-60:i+260]))
           PY
