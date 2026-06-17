@@ -51,7 +51,12 @@ def test_event_schedule_via_discovery() -> None:
     # a full WEC superseason has many events, not just the last one
     assert len(schedule) > 5
     assert schedule.get_event_by_name("Spa")["EventName"]
-    assert schedule.get_event_by_name("Le Mans")["EventName"]
+    le_mans = schedule.get_event_by_name("Le Mans")
+    assert le_mans["EventName"]
+    # the event's sessions are fetched from its own page (not just the race)
+    sessions = le_mans.get_sessions()
+    assert len(sessions) > 1
+    assert any("race" in s.lower() for s in sessions)
 
 
 @pytest.mark.network
