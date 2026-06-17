@@ -34,8 +34,9 @@ from endurancepy.events import (
     get_session,
     list_seasons,
 )
-from endurancepy.logger import set_log_level
+from endurancepy.logger import enable_console_logging, set_log_level
 from endurancepy.standings import Standings, compute_standings
+from endurancepy.utils import format_laptime, format_timedelta
 
 try:
     __version__ = version("endurancepy")
@@ -50,6 +51,9 @@ __all__ = [
     "Standings",
     "__version__",
     "compute_standings",
+    "enable_console_logging",
+    "format_laptime",
+    "format_timedelta",
     "get_event",
     "get_event_schedule",
     "get_session",

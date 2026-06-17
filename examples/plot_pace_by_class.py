@@ -25,11 +25,18 @@ def plot(session: Session, output: str | Path = "pace_by_class.png") -> Path:
     import matplotlib.pyplot as plt
 
     laps = session.laps
-    clean = laps.pick_wo_box().pick_track_status("GF")
+    clean = laps.pick_wo_box()
+    green = clean.pick_track_status("GF")
+    # Older seasons (e.g. 2018-2019) have no per-lap flag column, so green-flag
+    # filtering would drop every lap; fall back to all non-pit laps in that case.
+    clean = green if len(green) else clean
 
     data, labels, colors = [], [], []
     for class_name in sorted(laps["Class"].dropna().unique()):
-        seconds = clean.pick_classes(class_name)["LapTime"].dropna().dt.total_seconds()
+        # Representative pace: laps within 107% of the class best (drops the
+        # safety-car / heavy-traffic laps that would otherwise skew the box).
+        cls = clean.pick_classes(class_name).pick_quicklaps()
+        seconds = cls["LapTime"].dropna().dt.total_seconds()
         if len(seconds):
             data.append(seconds.to_numpy())
             labels.append(class_name)
@@ -42,7 +49,7 @@ def plot(session: Session, output: str | Path = "pace_by_class.png") -> Path:
     ax.set_xticks(range(1, len(labels) + 1))
     ax.set_xticklabels(labels)
     ax.set_ylabel("Lap time (s)")
-    ax.set_title("Green-flag pace by class")
+    ax.set_title("Race pace by class (laps within 107% of class best)")
 
     output = Path(output)
     fig.savefig(output, dpi=120, bbox_inches="tight")
@@ -51,6 +58,7 @@ def plot(session: Session, output: str | Path = "pace_by_class.png") -> Path:
 
 
 def main() -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
     session = ep.get_session(2019, "WEC", "Spa", "Race")

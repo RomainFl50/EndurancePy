@@ -17,6 +17,7 @@ import pandas as pd
 
 from endurancepy.cache import Cache
 from endurancepy.exceptions import DataNotLoadedError, SessionNotAvailableError
+from endurancepy.logger import LOGGER
 
 if TYPE_CHECKING:
     from endurancepy.events import Series
@@ -320,9 +321,18 @@ class Session:
         from endurancepy.alkamel.weather import read_weather
 
         host = self.series.host
+        LOGGER.info(
+            "Loading %s %s '%s' %s (season %s)",
+            self.series.name,
+            self.year,
+            self.event,
+            self.name,
+            season,
+        )
         event = discovery.find_event(
             discovery.fetch_events(host, season), str(self.event)
         )
+        LOGGER.info("Matched event '%s' -> %s", self.event, event.event_folder)
         records = discovery.fetch_index(host, season, event=event.event_folder)
         files = discovery.resolve_session_files(
             records,
@@ -330,12 +340,17 @@ class Session:
             session=self.name,
             series_keyword=self.series.keyword,
         )
+        LOGGER.info(
+            "Resolved files: %s",
+            ", ".join(f"{kind}={rf.filename}" for kind, rf in files.items()) or "none",
+        )
         if laps and "analysis" in files:
             self._laps = read_analysis(
                 download(files["analysis"].url(host)), session=self
             )
             self._results = None
             self._track_status = None
+            LOGGER.info("Parsed %d laps", len(self._laps))
             Cache.save_dataframe(self._cache_key(), pd.DataFrame(self._laps))
         if "classification" in files:
             self._results = read_classification(

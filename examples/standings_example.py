@@ -36,6 +36,7 @@ def compute(results: Sequence[pd.DataFrame]) -> Standings:
 
 
 def main() -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
 
