@@ -1,33 +1,36 @@
 # Examples
 
-Runnable examples covering the whole package.
+Runnable examples covering the whole package. **All examples load a real session
+over the network** via auto-discovery (`Session.load(season=...)`) — no CSV path,
+no bundled data. Just run them.
 
-| File | Network? | Shows |
-|---|---|---|
-| [`quickstart.py`](quickstart.py) | **Yes** | Load a real session via `Session.load(season=...)`, results & fastest laps. |
-| [`quickstart.ipynb`](quickstart.ipynb) | **Yes** | A full guided tour as a Jupyter notebook (outputs cleared). |
-| [`schedule_example.py`](schedule_example.py) | **Yes** | Browse a season calendar (`get_event_schedule`) and load an event. |
-| [`lap_analysis.py`](lap_analysis.py) | No | Parse a **local** Analysis CSV: every `pick_*` filter, stints, track status, classification. |
-| [`standings_example.py`](standings_example.py) | No | Championship `compute_standings` (overall, per class, custom points). |
-| [`plot_pace_by_class.py`](plot_pace_by_class.py) | No | Box plot of green-flag pace per class. |
-| [`plot_lap_evolution.py`](plot_lap_evolution.py) | No | Lap-time evolution scatter, coloured by class. |
+| File | Shows |
+|---|---|
+| [`quickstart.py`](quickstart.py) | Load a session, results & fastest laps |
+| [`quickstart.ipynb`](quickstart.ipynb) | A full guided tour as a Jupyter notebook (outputs cleared) |
+| [`schedule_example.py`](schedule_example.py) | Browse a season calendar (`get_event_schedule`) and load an event |
+| [`lap_analysis.py`](lap_analysis.py) | Every `pick_*` filter, stints, track status, classification |
+| [`standings_example.py`](standings_example.py) | `compute_standings` across rounds (overall, per class, custom points) |
+| [`plot_pace_by_class.py`](plot_pace_by_class.py) | Box plot of green-flag pace per class |
+| [`plot_lap_evolution.py`](plot_lap_evolution.py) | Lap-time evolution scatter, coloured by class |
 
 ## Running
 
 ```bash
-pip install "endurancepy[plot]"          # plotting extra for the chart examples
+pip install "endurancepy[plot]"     # plotting extra for the chart examples
 
-# network (auto-discovery from the portal)
 python examples/quickstart.py
 python examples/schedule_example.py
-
-# offline (give it a CSV you downloaded yourself)
-python examples/lap_analysis.py        path/to/23_Analysis_Race.CSV
-python examples/standings_example.py   path/to/23_Analysis_Race.CSV
-python examples/plot_pace_by_class.py  path/to/23_Analysis_Race.CSV out.png
-python examples/plot_lap_evolution.py  path/to/23_Analysis_Race.CSV evo.png
+python examples/lap_analysis.py
+python examples/standings_example.py
+python examples/plot_pace_by_class.py
+python examples/plot_lap_evolution.py
 ```
 
-**No Al Kamel data is bundled** — the offline examples take a CSV path you
-provide; please respect the portals' terms of service. Enable the cache once
-with `ep.Cache.enable_cache("./cache")` so sessions download/parse only once.
+Each example uses a known season id (e.g. `08_2018-2019`); edit the
+`get_session(...)` / `get_event_schedule(...)` calls to target another
+series/season/event. The on-disk cache (`ep.Cache.enable_cache(...)`) means a
+session is only downloaded and parsed once.
+
+> Please respect the portals' terms of service; no Al Kamel data ships with the
+> project. (CI runs these examples offline by faking the download layer.)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Examples now all load a real session over the network
+  (`Session.load(season=...)` / `get_event_schedule`) instead of taking a local
+  CSV path. CI still exercises them offline by faking the download layer (no
+  bundled Al Kamel data).
+
 ## [0.1.0] - 2026-06-16
 
 First release: load endurance racing timing & results data (WEC, ELMS, AsLMS,
