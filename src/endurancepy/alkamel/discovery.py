@@ -26,6 +26,8 @@ _HOUR_RE = re.compile(r"Hour\s*(\d+)", re.IGNORECASE)
 _SESSION_PREFIX_RE = re.compile(r"^\d+_(.*)$")
 _SESSION_TS_RE = re.compile(r"^(\d{12})_")
 _EVENT_PREFIX_RE = re.compile(r"^(\d+)_(.*)$")
+_SEASON_OPTION_RE = re.compile(r'value="(\d{2}_\d{4}(?:-\d{4})?)"')
+_SEASON_TOKEN_RE = re.compile(r"\b\d{2}_\d{4}(?:-\d{4})?\b")
 
 
 def _kind(filename: str) -> str:
@@ -195,6 +197,19 @@ def fetch_index(host: str, season: str, event: str | None = None) -> list[Result
         url += f"&evvent={quote(event)}"
     html = download(url).decode("utf-8", "replace")
     return index_page(html)
+
+
+def fetch_seasons(host: str) -> list[str]:
+    """Return the season ids (e.g. ``"13_2024"``) listed on a portal's home page.
+
+    The season selector is a ``<select name="season">``; its option values are
+    the ``NN_YYYY`` ids. Falls back to a page-wide token scan if needed.
+    """
+    from endurancepy.alkamel.client import download
+
+    html = download(f"https://{host}/").decode("utf-8", "replace")
+    ids = _SEASON_OPTION_RE.findall(html) or _SEASON_TOKEN_RE.findall(html)
+    return sorted(dict.fromkeys(ids))
 
 
 def session_datetime(session_folder: str) -> dt.datetime | None:

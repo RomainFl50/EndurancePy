@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `list_seasons(series)` returns the available Al Kamel season ids (parsed from
+  the portal's season selector), and `get_event_schedule(year, series)` now
+  resolves the season id automatically from the year (the explicit `season=`
+  argument remains as an override). Enables browsing events by year/series
+  without knowing the internal season id.
+
 ### Changed
 
 - Examples now all load a real session over the network
