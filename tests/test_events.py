@@ -5,9 +5,11 @@ from __future__ import annotations
 import datetime as dt
 
 import pandas as pd
+import pytest
 
 from endurancepy.alkamel.discovery import (
     build_events,
+    fetch_event_sessions,
     index_page,
     parse_events,
     session_datetime,
@@ -86,6 +88,40 @@ def test_get_event_by_name_and_round() -> None:
     schedule = _schedule()
     assert schedule.get_event_by_name("Spa")["EventName"] == "SPA FRANCORCHAMPS"
     assert schedule.get_event_by_round(8)["EventName"] == "LE MANS"
+
+
+def test_fetch_event_sessions_orders_chronologically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    paths = [
+        f"{_LM}/201906151500_Race/24_Hour 24/23_Analysis_Race_Hour 24.CSV",
+        f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
+        f"{_LM}/201906141200_Qualifying/90_ClassificationByClass_Qualifying.CSV",
+    ]
+    html = "".join(f'<a href="{p}">x</a>' for p in paths)
+    monkeypatch.setattr(
+        "endurancepy.alkamel.client.download", lambda url: html.encode()
+    )
+    sessions = fetch_event_sessions(
+        "fiawec.alkamelsystems.com",
+        "08_2018-2019",
+        "08_LE MANS",
+        series_keyword="WEC",
+    )
+    assert sessions == ["Free Practice 1", "Qualifying", "Race"]
+
+
+def test_event_get_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
+    paths = [
+        f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
+        f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
+    ]
+    html = "".join(f'<a href="{p}">x</a>' for p in paths)
+    monkeypatch.setattr(
+        "endurancepy.alkamel.client.download", lambda url: html.encode()
+    )
+    event = _schedule().get_event_by_name("Le Mans")
+    assert event.get_sessions() == ["Free Practice 1", "Race"]
 
 
 def test_event_get_session_carries_season() -> None:

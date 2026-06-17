@@ -254,6 +254,25 @@ def fetch_events(host: str, season: str) -> list[EventInfo]:
     return parse_events(html)
 
 
+def fetch_event_sessions(
+    host: str, season: str, event_folder: str, *, series_keyword: str | None = None
+) -> list[str]:
+    """List an event's session names, in chronological order.
+
+    The season calendar only lists events (not their sessions); the sessions
+    live on the event's own page (``?season=<id>&evvent=<folder>``). Fetches
+    that page and returns the session labels (e.g. ``["Free Practice 1",
+    "Qualifying", "Race"]``), ordered by their start timestamp.
+    """
+    records = fetch_index(host, season, event=event_folder)
+    pool = records
+    if series_keyword is not None:
+        pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
+    folders = list(dict.fromkeys(r.session for r in pool))
+    folders.sort(key=lambda f: session_datetime(f) or dt.datetime.min)
+    return [_session_label(f) for f in folders]
+
+
 def find_event(events: list[EventInfo], query: str) -> EventInfo:
     """Return the event best matching ``query`` (name or folder)."""
     if not events:

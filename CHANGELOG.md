@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   season page's event menu), not just the last/expanded one. Loading a session
   fetches that event's own page (`&evvent=`), so any event of the season can be
   loaded — previously only the most recent event was discoverable.
+- An event's session list is now populated on demand: `Event.get_sessions()`
+  fetches the event's own page and returns its session names (practice /
+  qualifying / race, in chronological order). The schedule's `Sessions` column
+  was empty because the calendar is built from the season's event *menu* (event
+  names only); the sessions live on each event's page.
 
 ### Added
 
