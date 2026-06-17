@@ -48,8 +48,10 @@ def test_event_schedule_via_discovery() -> None:
         pytest.skip("Al Kamel portal not reachable from this environment")
 
     schedule = ep.get_event_schedule(2019, "WEC", season=_SEASON)
-    assert len(schedule) > 0
+    # a full WEC superseason has many events, not just the last one
+    assert len(schedule) > 5
     assert schedule.get_event_by_name("Spa")["EventName"]
+    assert schedule.get_event_by_name("Le Mans")["EventName"]
 
 
 @pytest.mark.network

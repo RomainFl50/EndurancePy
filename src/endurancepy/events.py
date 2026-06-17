@@ -87,6 +87,7 @@ _SERIES_KEYWORDS: dict[Series, str] = {
 _SCHEDULE_DTYPES: dict[str, str] = {
     "RoundNumber": "Int64",
     "EventName": "string",
+    "EventFolder": "string",
     "EventDate": "datetime64[ns]",
     "Sessions": "object",
     "Series": "string",
@@ -166,7 +167,7 @@ class Event(pd.Series):
         return Session(
             year=self.year,
             series=self.series,
-            event=str(self["EventName"]),
+            event=str(self["EventFolder"]),
             name=str(identifier),
             default_season=self["Season"],
         )
@@ -226,12 +227,12 @@ def get_event_schedule(
     if season is None:
         season = _resolve_season(resolved, year)
 
-    records = discovery.fetch_index(resolved.host, season)
-    events = discovery.build_events(records, series_keyword=resolved.keyword)
+    events = discovery.fetch_events(resolved.host, season)
     rows = [
         {
             "RoundNumber": event.round,
             "EventName": event.name,
+            "EventFolder": event.event_folder,
             "EventDate": event.date,
             "Sessions": list(event.sessions),
             "Series": resolved.name,

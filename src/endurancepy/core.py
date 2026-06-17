@@ -320,10 +320,13 @@ class Session:
         from endurancepy.alkamel.weather import read_weather
 
         host = self.series.host
-        records = discovery.fetch_index(host, season)
+        event = discovery.find_event(
+            discovery.fetch_events(host, season), str(self.event)
+        )
+        records = discovery.fetch_index(host, season, event=event.event_folder)
         files = discovery.resolve_session_files(
             records,
-            event=str(self.event),
+            event=event.name,
             session=self.name,
             series_keyword=self.series.keyword,
         )

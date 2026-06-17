@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `get_event_schedule` now lists **all** events of a season (parsed from the
+  season page's event menu), not just the last/expanded one. Loading a session
+  fetches that event's own page (`&evvent=`), so any event of the season can be
+  loaded — previously only the most recent event was discoverable.
+
 ### Added
 
 - `list_seasons(series)` returns the available Al Kamel season ids (parsed from
