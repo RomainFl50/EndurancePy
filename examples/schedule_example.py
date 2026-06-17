@@ -23,7 +23,7 @@ def main(series: str = "WEC", year: int = 2019) -> None:
 
     schedule = ep.get_event_schedule(year, series)  # season id resolved from year
     print(f"\n{series} {year} ({schedule.season}) — {len(schedule)} events:")
-    print(schedule[["RoundNumber", "EventName", "EventDate"]].to_string(index=False))
+    print(schedule[["RoundNumber", "EventName"]].to_string(index=False))
 
     event = schedule.get_event_by_name("Le Mans")
     print(f"\n{event['EventName']} sessions: {', '.join(event['Sessions'])}")

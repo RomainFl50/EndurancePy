@@ -6,7 +6,12 @@ import datetime as dt
 
 import pandas as pd
 
-from endurancepy.alkamel.discovery import build_events, index_page, session_datetime
+from endurancepy.alkamel.discovery import (
+    build_events,
+    index_page,
+    parse_events,
+    session_datetime,
+)
 from endurancepy.core import Session
 from endurancepy.events import EventSchedule, Series
 
@@ -21,6 +26,31 @@ _PATHS = [
 ]
 _HTML = "".join(f'<a href="{p}">x</a>' for p in _PATHS)
 _RECORDS = index_page(_HTML)
+
+
+# A season-page menu mixing event names, file prefixes, season ids and a series
+# folder — only the ALL-CAPS event folders should be extracted.
+_MENU = (
+    "<li><a>01_SILVERSTONE</a></li>"
+    "<li><a>07_LE MANS</a></li>"
+    "<li><a>08_BAHRAIN INTERNATIONAL CIRCUIT</a></li>"
+    "<a>23_Analysis_Race_Hour 6.CSV</a>"
+    "<a>05_ClassificationByClass_Free</a>"
+    "<a>00_Event Info</a>"
+    '<option value="08_2018-2019">2018-2019</option>'
+    "Results/09_2019-2020/267_FIA WEC/x.CSV"
+)
+
+
+def test_parse_events_extracts_only_event_folders() -> None:
+    events = parse_events(_MENU)
+    assert [e.event_folder for e in events] == [
+        "01_SILVERSTONE",
+        "07_LE MANS",
+        "08_BAHRAIN INTERNATIONAL CIRCUIT",
+    ]
+    assert [e.round for e in events] == [1, 7, 8]
+    assert events[1].name == "LE MANS"
 
 
 def test_session_datetime() -> None:
@@ -42,6 +72,7 @@ def _schedule() -> EventSchedule:
         {
             "RoundNumber": [7, 8],
             "EventName": ["SPA FRANCORCHAMPS", "LE MANS"],
+            "EventFolder": ["07_SPA FRANCORCHAMPS", "08_LE MANS"],
             "EventDate": [dt.datetime(2019, 5, 4), dt.datetime(2019, 6, 15)],
             "Sessions": [["Free Practice 1", "Race"], ["Race"]],
             "Series": ["WEC", "WEC"],
@@ -62,6 +93,6 @@ def test_event_get_session_carries_season() -> None:
     session = event.get_session("Race")
     assert isinstance(session, Session)
     assert session.name == "Race"
-    assert session.event == "LE MANS"
+    assert session.event == "08_LE MANS"  # the event folder, used to load files
     assert session.series is Series.WEC
     assert session.default_season == "08_2018-2019"

@@ -28,6 +28,12 @@ _SESSION_TS_RE = re.compile(r"^(\d{12})_")
 _EVENT_PREFIX_RE = re.compile(r"^(\d+)_(.*)$")
 _SEASON_OPTION_RE = re.compile(r'value="(\d{2}_\d{4}(?:-\d{4})?)"')
 _SEASON_TOKEN_RE = re.compile(r"\b\d{2}_\d{4}(?:-\d{4})?\b")
+# Event folders are ``NN_NAME`` with an ALL-CAPS circuit name (e.g. ``07_LE
+# MANS``). The upper-case-only character class excludes file/report prefixes
+# (CamelCase, e.g. ``23_Analysis``) and the negative look-behind excludes
+# 3-digit series folders (e.g. ``267_FIA WEC``); the look-ahead anchors the end
+# to a tag/quote/slash boundary.
+_EVENT_NAME_RE = re.compile(r"(?<!\d)(\d{2}_[A-Z0-9][A-Z0-9 .&'/\-]{2,50})(?=[\"'<>/])")
 
 
 def _kind(filename: str) -> str:
@@ -210,6 +216,53 @@ def fetch_seasons(host: str) -> list[str]:
     html = download(f"https://{host}/").decode("utf-8", "replace")
     ids = _SEASON_OPTION_RE.findall(html) or _SEASON_TOKEN_RE.findall(html)
     return sorted(dict.fromkeys(ids))
+
+
+def parse_events(html: str) -> list[EventInfo]:
+    """Extract the event folders (``NN_NAME``) from a season page's menu."""
+    seen: dict[str, EventInfo] = {}
+    for raw in _EVENT_NAME_RE.findall(html):
+        folder = raw.strip()
+        match = _EVENT_PREFIX_RE.match(folder)
+        if not match:
+            continue
+        name = match.group(2).strip()
+        if not name or re.fullmatch(r"\d{4}(?:-\d{4})?", name):
+            continue  # season id, not an event
+        if not re.search(r"[A-Z]", name):
+            continue
+        if folder not in seen:
+            seen[folder] = EventInfo(
+                round=int(match.group(1)),
+                name=name,
+                date=None,
+                sessions=(),
+                event_folder=folder,
+            )
+    return sorted(
+        seen.values(), key=lambda e: (e.round if e.round is not None else 9999, e.name)
+    )
+
+
+def fetch_events(host: str, season: str) -> list[EventInfo]:
+    """Download a season page and parse its full event list."""
+    from endurancepy.alkamel.client import download
+
+    html = download(f"https://{host}/?season={quote(season)}").decode(
+        "utf-8", "replace"
+    )
+    return parse_events(html)
+
+
+def find_event(events: list[EventInfo], query: str) -> EventInfo:
+    """Return the event best matching ``query`` (name or folder)."""
+    if not events:
+        raise SessionNotAvailableError("No events were discovered for this season.")
+    options: dict[str, EventInfo] = {}
+    for event in events:
+        options[event.name] = event
+        options[event.event_folder] = event
+    return options[_best_match(query, list(options))]
 
 
 def session_datetime(session_folder: str) -> dt.datetime | None:
