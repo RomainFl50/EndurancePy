@@ -247,11 +247,19 @@ def parse_events(html: str) -> list[EventInfo]:
 def fetch_events(host: str, season: str) -> list[EventInfo]:
     """Download a season page and parse its full event list."""
     from endurancepy.alkamel.client import download
+    from endurancepy.logger import LOGGER
 
     html = download(f"https://{host}/?season={quote(season)}").decode(
         "utf-8", "replace"
     )
-    return parse_events(html)
+    events = parse_events(html)
+    LOGGER.info(
+        "Discovered %d events for season %s: %s",
+        len(events),
+        season,
+        ", ".join(e.name for e in events),
+    )
+    return events
 
 
 def fetch_event_sessions(
@@ -264,13 +272,19 @@ def fetch_event_sessions(
     that page and returns the session labels (e.g. ``["Free Practice 1",
     "Qualifying", "Race"]``), ordered by their start timestamp.
     """
+    from endurancepy.logger import LOGGER
+
     records = fetch_index(host, season, event=event_folder)
     pool = records
     if series_keyword is not None:
         pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
     folders = list(dict.fromkeys(r.session for r in pool))
     folders.sort(key=lambda f: session_datetime(f) or dt.datetime.min)
-    return [_session_label(f) for f in folders]
+    sessions = [_session_label(f) for f in folders]
+    LOGGER.info(
+        "Event %s has %d sessions: %s", event_folder, len(sessions), ", ".join(sessions)
+    )
+    return sessions
 
 
 def find_event(events: list[EventInfo], query: str) -> EventInfo:

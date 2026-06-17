@@ -16,6 +16,7 @@ import endurancepy as ep
 
 
 def main(series: str = "WEC", year: int = 2019) -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
 

@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `format_timedelta` / `format_laptime` render a duration as a readable
+  `M:SS.mmm` (or `H:MM:SS.mmm`) instead of pandas' verbose
+  `0 days 00:01:58.056000`. Lap/sector times stay `Timedelta` (FastF1 parity);
+  formatting is a display concern. Used across the examples.
+- `set_log_level` now also attaches a console (stderr) handler by default, so
+  `ep.set_log_level("INFO")` actually surfaces logs; `enable_console_logging`
+  exposes that directly. Loading/discovery now emit INFO logs (events found,
+  event/session matched, files resolved, laps parsed, each download). All
+  examples enable INFO logging so progress is visible.
+
 ### Fixed
+
+- Pace / lap-evolution plots came out **empty** for older seasons (e.g.
+  2018-2019), whose Analysis CSV has no per-lap flag column: green-flag
+  filtering dropped every lap. The examples now fall back to all non-pit laps
+  when no `GF` flag is present (and the pace plot trims to laps within 107% of
+  each class best for a meaningful distribution).
 
 - `get_event_schedule` now lists **all** events of a season (parsed from the
   season page's event menu), not just the last/expanded one. Loading a session

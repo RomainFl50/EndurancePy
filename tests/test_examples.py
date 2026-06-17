@@ -11,6 +11,7 @@ import importlib.util
 from pathlib import Path
 from types import ModuleType
 
+import pandas as pd
 import pytest
 
 import endurancepy as ep
@@ -86,6 +87,17 @@ def test_standings_example(
 def test_plot_pace_by_class(session: Session, tmp_path: Path) -> None:
     pytest.importorskip("matplotlib")
     output = _load("plot_pace_by_class").plot(session, tmp_path / "pace.png")
+    assert output.exists() and output.stat().st_size > 0
+
+
+def test_plot_pace_by_class_without_track_status(
+    session: Session, tmp_path: Path
+) -> None:
+    # Older seasons have no per-lap flag column; the plot must still render
+    # (fall back to all non-pit laps) instead of coming out empty.
+    pytest.importorskip("matplotlib")
+    session.laps["TrackStatus"] = pd.NA
+    output = _load("plot_pace_by_class").plot(session, tmp_path / "pace_noflag.png")
     assert output.exists() and output.stat().st_size > 0
 
 

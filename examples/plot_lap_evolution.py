@@ -25,7 +25,11 @@ def plot(session: Session, output: str | Path = "lap_evolution.png") -> Path:
     import matplotlib.pyplot as plt
 
     laps = session.laps
-    clean = laps.pick_wo_box().pick_track_status("GF")
+    clean = laps.pick_wo_box()
+    green = clean.pick_track_status("GF")
+    # Older seasons (e.g. 2018-2019) have no per-lap flag column, so green-flag
+    # filtering would drop every lap; fall back to all non-pit laps in that case.
+    clean = green if len(green) else clean
 
     fig, ax = plt.subplots(figsize=(9, 5))
     seen: set[str] = set()
@@ -54,6 +58,7 @@ def plot(session: Session, output: str | Path = "lap_evolution.png") -> Path:
 
 
 def main() -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
     session = ep.get_session(2019, "WEC", "Spa", "Race")

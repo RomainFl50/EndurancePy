@@ -66,4 +66,11 @@ def download(url: str) -> bytes:
     session = Cache.requests_session()
     response = session.get(url, headers=DEFAULT_HEADERS, timeout=REQUEST_TIMEOUT)
     response.raise_for_status()
+    from_cache = getattr(response, "from_cache", False)
+    LOGGER.info(
+        "%s %s (%d bytes)",
+        "CACHE" if from_cache else "GET",
+        url,
+        len(response.content),
+    )
     return response.content

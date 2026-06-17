@@ -13,12 +13,19 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pandas as pd
+
 import endurancepy as ep
 from endurancepy.core import Laps, Session
 
 
 def _fmt(value: object) -> str:
-    return "-" if value is None or str(value) == "NaT" else str(value)
+    """Render durations as ``M:SS.mmm``; pass other values through as text."""
+    if value is None or str(value) == "NaT":
+        return "-"
+    if isinstance(value, pd.Timedelta):
+        return ep.format_timedelta(value)
+    return str(value)
 
 
 def analyse(session: Session) -> Laps:
@@ -74,6 +81,7 @@ def analyse(session: Session) -> Laps:
 
 
 def main() -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
     session = ep.get_session(2019, "WEC", "Spa", "Race")

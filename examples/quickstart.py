@@ -30,12 +30,13 @@ def summarise(session: Session) -> None:
     fastest = laps.pick_fastest()
     if fastest is not None:
         print(
-            f"\nFastest lap: {fastest['LapTime']} "
+            f"\nFastest lap: {ep.format_laptime(fastest['LapTime'])} "
             f"by car {fastest['CarNumber']} ({fastest['Driver']})"
         )
 
 
 def main() -> None:
+    ep.set_log_level("INFO")  # show discovery/download progress on stderr
     Path("./endurancepy-cache").mkdir(exist_ok=True)
     ep.Cache.enable_cache("./endurancepy-cache")
 
