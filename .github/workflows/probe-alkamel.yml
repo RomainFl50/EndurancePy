@@ -1,0 +1,44 @@
+name: probe-alkamel
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/sweet-brahmagupta-0zia6b"]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe event enumeration
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.parse, re
+          UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                              "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"}
+
+          def get(url, n=3_000_000):
+              req = urllib.request.Request(url, headers=UA)
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as r:
+                      return r.status, r.read(n)
+              except Exception as e:
+                  return None, str(e).encode()
+
+          host = "fiawec.alkamelsystems.com"
+          for season in ["08_2018-2019", "09_2019-2020", "13_2024"]:
+              url = f"https://{host}/?season={urllib.parse.quote(season)}"
+              st, data = get(url)
+              html = data.decode("utf-8", "replace") if data else ""
+              print(f"\n===== season={season} status={st} len={len(html)} =====")
+              res_events = sorted(set(re.findall(
+                  r'Results/[^/"\']+/([^/"\']+)/[^"\']+\.CSV', html, re.I)))
+              print("events from Results CSV paths:", res_events)
+              evvents = sorted(set(re.findall(r'evvent=([^"&\'<>]+)', html)))
+              print("evvent= tokens:", [urllib.parse.unquote(e) for e in evvents])
+              m = re.search(r'<select[^>]*name="evvent"[^>]*>(.*?)</select>', html, re.S | re.I)
+              if m:
+                  opts = re.findall(r'value="([^"]*)"', m.group(1))
+                  print("evvent <option> values:", [urllib.parse.unquote(o) for o in opts])
+              else:
+                  print("no <select name=evvent> found")
+          PY
