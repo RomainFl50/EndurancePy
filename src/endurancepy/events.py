@@ -176,6 +176,21 @@ class Event(pd.Series):
         """Return the race session of this event."""
         return self.get_session("Race")
 
+    def get_sessions(self) -> list[str]:
+        """List this event's session names (e.g. practice / qualifying / race).
+
+        Fetched on demand from the event's own portal page — the season
+        calendar only lists the events, not the sessions inside each one.
+        """
+        from endurancepy.alkamel import discovery
+
+        return discovery.fetch_event_sessions(
+            self.series.host,
+            str(self["Season"]),
+            str(self["EventFolder"]),
+            series_keyword=self.series.keyword,
+        )
+
 
 def get_session(
     year: int,
