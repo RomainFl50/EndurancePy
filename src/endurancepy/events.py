@@ -11,6 +11,7 @@ selector is a JS menu that is not scrapeable from static HTML).
 
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Any
 
@@ -27,7 +28,11 @@ __all__ = [
     "get_event",
     "get_event_schedule",
     "get_session",
+    "list_seasons",
 ]
+
+#: Parse a season id (``NN_YYYY`` or ``NN_YYYY-YYYY``) into its starting year.
+_SEASON_YEAR_RE = re.compile(r"^\d+_(\d{4})(?:-\d{4})?$")
 
 
 class Series(Enum):
@@ -207,20 +212,19 @@ def get_event_schedule(
     Parameters
     ----------
     year:
-        Season year (for reference/metadata).
+        Season year. Used to auto-resolve the Al Kamel season id from the
+        portal's season list (matched on the season's starting year).
     series:
         The championship.
     season:
-        Al Kamel season id, e.g. ``"08_2018-2019"`` (required — see module docs).
+        Al Kamel season id (e.g. ``"08_2018-2019"``) to use a specific season
+        explicitly instead of resolving it from ``year``.
     """
     resolved = Series.coerce(series)
-    if season is None:
-        raise SessionNotAvailableError(
-            "A season id is required, e.g. season='13_2024' "
-            "(the portal's season list is not scrapeable from static HTML)."
-        )
-
     from endurancepy.alkamel import discovery
+
+    if season is None:
+        season = _resolve_season(resolved, year)
 
     records = discovery.fetch_index(resolved.host, season)
     events = discovery.build_events(records, series_keyword=resolved.keyword)
@@ -248,3 +252,29 @@ def get_event(
     if isinstance(event, int):
         return schedule.get_event_by_round(event)
     return schedule.get_event_by_name(event)
+
+
+def list_seasons(series: str | Series) -> list[str]:
+    """Return the available Al Kamel season ids for a series (e.g. ``"13_2024"``).
+
+    The id encodes the year(s): ``"13_2024"`` is 2024, ``"08_2018-2019"`` is the
+    2018-2019 superseason.
+    """
+    resolved = Series.coerce(series)
+    from endurancepy.alkamel import discovery
+
+    return discovery.fetch_seasons(resolved.host)
+
+
+def _resolve_season(series: Series, year: int) -> str:
+    """Resolve a season id from a year by matching the season's starting year."""
+    from endurancepy.alkamel import discovery
+
+    seasons = discovery.fetch_seasons(series.host)
+    for season_id in seasons:
+        match = _SEASON_YEAR_RE.match(season_id)
+        if match and int(match.group(1)) == year:
+            return season_id
+    raise SessionNotAvailableError(
+        f"No {series.name} season starts in {year}. Available: {seasons}"
+    )

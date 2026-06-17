@@ -1,11 +1,11 @@
-"""Browse a season calendar and load one event (needs network).
+"""Browse seasons and a season calendar, then load an event (needs network).
 
 Run with::
 
     python examples/schedule_example.py
 
-Lists a season's events for a series, then loads one race via the schedule.
-Season ids look like ``"08_2018-2019"`` / ``"13_2024"`` (see the portal URL).
+Lists the available seasons for a series, builds a year's calendar (the season
+id is resolved automatically from the year), then loads one race.
 """
 
 from __future__ import annotations
@@ -15,13 +15,14 @@ from pathlib import Path
 import endurancepy as ep
 
 
-def main(series: str = "WEC", season: str = "08_2018-2019", year: int = 2019) -> None:
-    cache_dir = Path("./endurancepy-cache")
-    cache_dir.mkdir(exist_ok=True)
-    ep.Cache.enable_cache(cache_dir)
+def main(series: str = "WEC", year: int = 2019) -> None:
+    Path("./endurancepy-cache").mkdir(exist_ok=True)
+    ep.Cache.enable_cache("./endurancepy-cache")
 
-    schedule = ep.get_event_schedule(year, series, season=season)
-    print(f"{series} {season} - {len(schedule)} events:")
+    print(f"Available {series} seasons: {ep.list_seasons(series)}")
+
+    schedule = ep.get_event_schedule(year, series)  # season id resolved from year
+    print(f"\n{series} {year} ({schedule.season}) — {len(schedule)} events:")
     print(schedule[["RoundNumber", "EventName", "EventDate"]].to_string(index=False))
 
     event = schedule.get_event_by_name("Le Mans")

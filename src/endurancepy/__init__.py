@@ -32,6 +32,7 @@ from endurancepy.events import (
     get_event,
     get_event_schedule,
     get_session,
+    list_seasons,
 )
 from endurancepy.logger import set_log_level
 from endurancepy.standings import Standings, compute_standings
@@ -52,6 +53,7 @@ __all__ = [
     "get_event",
     "get_event_schedule",
     "get_session",
+    "list_seasons",
     "read_analysis",
     "read_classification",
     "read_weather",

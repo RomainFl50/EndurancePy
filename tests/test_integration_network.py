@@ -50,3 +50,16 @@ def test_event_schedule_via_discovery() -> None:
     schedule = ep.get_event_schedule(2019, "WEC", season=_SEASON)
     assert len(schedule) > 0
     assert schedule.get_event_by_name("Spa")["EventName"]
+
+
+@pytest.mark.network
+def test_list_and_resolve_seasons() -> None:
+    if not _portal_reachable():
+        pytest.skip("Al Kamel portal not reachable from this environment")
+
+    seasons = ep.list_seasons("WEC")
+    assert _SEASON in seasons
+    # season id resolved automatically from the year (no explicit season=)
+    schedule = ep.get_event_schedule(2024, "WEC")
+    assert schedule.season == "13_2024"
+    assert len(schedule) > 0
