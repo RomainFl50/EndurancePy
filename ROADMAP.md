@@ -26,8 +26,9 @@ hand-built. 0.3.0 turns plotting into a first-class, endurance-aware feature.
 
 ### Signature chart helpers
 
-Reusable functions that return `(fig, ax)` (composable, never `plt.show()`
-internally):
+Reusable functions that return the native figure (a `plotly.Figure` on the
+interactive path, or matplotlib `(fig, ax)` on the static path) — composable,
+never showing/blocking internally:
 
 - **`plot_strategy(session)`** — Gantt of the stints: one horizontal bar per car,
   segmented by stint, marking pit stops and driver changes. *The* endurance plot.
@@ -54,9 +55,11 @@ internally):
 
 ### Axes & theming
 
-- **Lap-time axis formatter** — a `matplotlib.ticker` Formatter/Locator built on
-  the existing `format_timedelta`, so axes read `1:58.0`, not seconds. (FastF1
-  leans on the external *Timple* lib for this; see the library notes below.)
+- **Lap-time axis & hover formatting** — durations rendered via the existing
+  `format_timedelta`: as Plotly tick text + `hovertemplate` on the interactive
+  path, and a small `matplotlib.ticker` Formatter on the seaborn path, so times
+  read `1:58.0`, not seconds. (Timple is the matplotlib-only alternative; see the
+  library notes below.)
 - **Track-status overlay** — shade FCY / SC / red-flag windows on any time-axis
   plot. High value given how long endurance races are.
 - **Light/dark theme** and a richer `setup_mpl(theme=...)` (fonts, rcParams).
@@ -73,32 +76,40 @@ Some charts need columns that are in the schema but not yet populated:
 
 ## Plotting library evaluation
 
-0.3.0 needs a backend decision. Endurance races are *long* (6–24 h), so
-interactivity (zoom into a stint, hover for car/driver/lap) is unusually valuable
-— but bespoke charts (strategy Gantt, race trace) need low-level control.
+0.3.0 needs a backend decision. Endurance fields are **large** (often 30–60+ cars)
+and races are **long** (6–24 h, hundreds of laps), so a static chart of the whole
+field turns into spaghetti fast. **Interactivity is therefore a requirement, not a
+nicety**: zoom into a stint window, hover for car/driver/lap/gap, and click the
+legend to isolate a car or class. Plain matplotlib output also just looks dated
+next to Plotly/seaborn.
 
 | Library | Strengths | Trade-offs | Fit for EndurancePy |
 |---|---|---|---|
-| **Matplotlib** | Static, publication-quality, total control; what FastF1 uses; already our optional `plot` extra | No interactivity; weak native timedelta axes | **Default/static backend** — best for the bespoke Gantt & race-trace |
-| **Plotly** | Interactive by default in 2026 (zoom/pan/hover), notebook-native, standalone-HTML export | Heavier dep; large JSON for very long races | **Optional interactive backend** — strong for 24 h zoom/share |
-| **Bokeh** | Interactive, streaming/server, scales to large data | More verbose; server model is overkill here | Later, if a live/dashboard angle appears |
-| **HoloViews + Datashader** | Renders millions of points, pixel-accurate, zoomable; backend-agnostic | Conceptual weight; another abstraction | Only if perf becomes a real issue (full field × 24 h) |
-| **Altair (Vega-Lite)** | Declarative grammar-of-graphics, faceting | Awkward for custom timelines (Gantt/trace); data-size limits | Possible for exploratory/faceted distributions |
-| **Seaborn** | Quick statistical charts (violin/box of pace) over matplotlib | Just a matplotlib wrapper; not for bespoke timelines | Convenience only — no hard dependency |
-| **Timple** | matplotlib timedelta locators/formatters (by FastF1's author) | Niche, small maintenance surface | Alternative to our own lap-time formatter |
+| **Plotly** | Interactive by default (zoom/pan/hover, legend-toggle to isolate a car/class), notebook-native, standalone-HTML export, modern look | Heavier dep; large JSON for very long races (mitigated by `Scattergl`/WebGL) | **Primary/default backend** — the dense timelines (strategy, trace, gap, evolution) need it |
+| **Seaborn** | Polished statistical charts (violin/box/KDE of pace) over matplotlib; great for print/PDF | Static; thin wrapper, so bespoke timelines still need raw matplotlib | **Static "pretty" path** — pace distributions & publication figures |
+| **Matplotlib** | Total low-level control; what FastF1 uses; engine under seaborn | No interactivity; dated default style; weak timedelta axes (needs Timple) | The engine under seaborn / static fallback — not the user-facing default |
+| **Bokeh** | Interactive, streaming/server, scales to large data | More verbose than Plotly; server model is overkill here | Later, only if a live/dashboard angle appears |
+| **HoloViews + Datashader** | Renders millions of points, pixel-accurate, zoomable | Conceptual weight; another abstraction | Escalation only, if Plotly+WebGL hits a perf wall (full field × 24 h) |
+| **Altair (Vega-Lite)** | Declarative grammar-of-graphics, faceting | Awkward for custom timelines (Gantt/trace); data-size limits | Not planned |
+| **Timple** | matplotlib timedelta locators/formatters (by FastF1's author) | **matplotlib-only**; dormant (last release 0.1.6, May 2023) | Only on the seaborn/matplotlib path; otherwise superseded by our own formatter |
 
-**Recommendation:** matplotlib-first, Plotly-optional.
+**Recommendation:** Plotly-first (interactive), seaborn for static stats.
 
-1. Keep **matplotlib** as the default backend (FastF1 parity, full control for the
-   signature charts, already an extra).
-2. Add an **optional Plotly backend** (`endurancepy[plot-interactive]`) for the
-   charts that benefit most from zoom/hover on a long race; helpers stay
-   backend-agnostic by returning a figure object.
-3. For lap-time axes, ship a **small in-house formatter** on top of
-   `format_timedelta` (no new dependency); document **Timple** as the drop-in
-   alternative for users who want its richer locators.
-4. Defer **Bokeh** and **HoloViews/Datashader** unless a dashboard need or a real
-   performance wall shows up.
+1. **Plotly is the default backend** for the dense, signature charts (strategy
+   Gantt, race trace, position/gap evolution, lap evolution). Interactivity —
+   zoom into a stint, hover for car/driver/lap/gap, legend-toggle a class — is
+   what keeps a 50-car / 24 h chart readable. Use `Scattergl` (WebGL) for the
+   high-point-count traces, and export standalone HTML for sharing.
+2. **Seaborn for the static, statistical "pretty" path** (pace distributions:
+   violin/box/KDE per class) and clean print/PDF figures.
+3. **Duration formatting** is done with our own `format_timedelta` — as Plotly
+   tick text / `hovertemplate` on the Plotly path, and a small matplotlib
+   `Formatter` on the seaborn path. **Timple** is matplotlib-only and dormant, so
+   it's a documented opt-in for the seaborn path, not a dependency.
+4. Helpers stay **backend-aware but return the native figure** (`plotly.Figure`
+   or matplotlib `(fig, ax)`) so users can keep customising.
+5. Defer **Bokeh** and **HoloViews/Datashader** unless a dashboard need or a real
+   Plotly performance wall shows up.
 
 ---
 
