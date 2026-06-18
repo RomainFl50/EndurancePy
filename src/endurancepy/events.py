@@ -11,6 +11,7 @@ selector is a JS menu that is not scrapeable from static HTML).
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 from enum import Enum
 from typing import Any
@@ -88,7 +89,7 @@ _SERIES_KEYWORDS: dict[Series, str] = {
 #: The calendar is built from the season page's event *menu* (event names only);
 #: an event's date and session list live on the event's own page and would each
 #: require an extra fetch per event. They are therefore fetched lazily, on
-#: demand, via :meth:`Event.get_date` / :meth:`Event.get_sessions` rather than
+#: demand, via :meth:`Event.get_dates` / :meth:`Event.get_sessions` rather than
 #: eagerly here.
 _SCHEDULE_DTYPES: dict[str, str] = {
     "RoundNumber": "Int64",
@@ -96,6 +97,13 @@ _SCHEDULE_DTYPES: dict[str, str] = {
     "EventFolder": "string",
     "Series": "string",
     "Season": "string",
+}
+
+#: Column dtypes of the per-event session table (:meth:`Event.get_sessions`).
+_SESSION_DTYPES: dict[str, str] = {
+    "Session": "string",
+    "StartTime": "datetime64[ns]",  # includes the time of day
+    "Duration": "timedelta64[ns]",  # known for races; NaT otherwise
 }
 
 
@@ -180,37 +188,51 @@ class Event(pd.Series):
         """Return the race session of this event."""
         return self.get_session("Race")
 
-    def get_sessions(self) -> list[str]:
-        """List this event's session names (e.g. practice / qualifying / race).
+    def get_sessions(self) -> pd.DataFrame:
+        """This event's sessions with their start time and duration.
 
-        Fetched on demand from the event's own portal page — the season
-        calendar only lists the events, not the sessions inside each one.
+        Returns a :class:`~pandas.DataFrame` (one row per session, ordered
+        chronologically) with columns ``Session``, ``StartTime`` (date *and*
+        time of day) and ``Duration`` (the race length, derived from the portal's
+        per-hour folders; ``NaT`` for practice/qualifying, whose length the file
+        index does not encode).
+
+        Fetched on demand from the event's own portal page — the season calendar
+        only lists the events, not the sessions inside each one.
         """
         from endurancepy.alkamel import discovery
 
-        return discovery.fetch_event_sessions(
+        sessions = discovery.fetch_event_sessions(
             self.series.host,
             str(self["Season"]),
             str(self["EventFolder"]),
             series_keyword=self.series.keyword,
         )
+        frame = pd.DataFrame(
+            [
+                {"Session": s.name, "StartTime": s.start, "Duration": s.duration}
+                for s in sessions
+            ],
+            columns=list(_SESSION_DTYPES),
+        )
+        return frame.astype(_SESSION_DTYPES)
 
-    def get_date(self) -> pd.Timestamp | None:
-        """Fetch this event's date (the race day), or ``None`` if unknown.
+    def get_dates(self) -> tuple[dt.date, dt.date] | None:
+        """The span of *dates* this event runs over: ``(first_day, last_day)``.
 
-        Like :meth:`get_sessions`, this is resolved on demand from the event's
-        own page (it is not part of the season calendar): the date is taken from
-        the event's last session's timestamp — i.e. the race day.
+        Dates only (no time of day) — the calendar amplitude of the race
+        weekend, e.g. ``(date(2019, 5, 2), date(2019, 5, 4))``. Returns ``None``
+        if no date can be resolved. Like :meth:`get_sessions`, this is fetched on
+        demand from the event's own page (it is not part of the season calendar).
         """
         from endurancepy.alkamel import discovery
 
-        date = discovery.fetch_event_date(
+        return discovery.fetch_event_dates(
             self.series.host,
             str(self["Season"]),
             str(self["EventFolder"]),
             series_keyword=self.series.keyword,
         )
-        return pd.Timestamp(date) if date is not None else None
 
 
 def get_session(

@@ -262,15 +262,30 @@ def fetch_events(host: str, season: str) -> list[EventInfo]:
     return events
 
 
+@dataclass(frozen=True)
+class SessionInfo:
+    """A single session of an event, with its start time and duration.
+
+    ``start`` keeps the time-of-day (parsed from the session folder's
+    ``YYYYMMDDHHMM`` prefix). ``duration`` is only known for races, where the
+    portal exposes per-hour snapshot folders (``Hour N``): the highest hour is
+    the race length. It is ``None`` for sessions that carry no such marker
+    (practice / qualifying), whose length is not encoded in the file index.
+    """
+
+    name: str
+    start: dt.datetime | None
+    duration: dt.timedelta | None
+
+
 def fetch_event_sessions(
     host: str, season: str, event_folder: str, *, series_keyword: str | None = None
-) -> list[str]:
-    """List an event's session names, in chronological order.
+) -> list[SessionInfo]:
+    """List an event's sessions (name, start time, duration), chronologically.
 
     The season calendar only lists events (not their sessions); the sessions
     live on the event's own page (``?season=<id>&evvent=<folder>``). Fetches
-    that page and returns the session labels (e.g. ``["Free Practice 1",
-    "Qualifying", "Race"]``), ordered by their start timestamp.
+    that page and returns one :class:`SessionInfo` per session, ordered by start.
     """
     from endurancepy.logger import LOGGER
 
@@ -278,24 +293,45 @@ def fetch_event_sessions(
     pool = records
     if series_keyword is not None:
         pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
+
+    hours: dict[str, list[int]] = {}
+    for record in pool:
+        if record.hour is not None:
+            hours.setdefault(record.session, []).append(record.hour)
+
     folders = list(dict.fromkeys(r.session for r in pool))
     folders.sort(key=lambda f: session_datetime(f) or dt.datetime.min)
-    sessions = [_session_label(f) for f in folders]
+
+    sessions = []
+    for folder in folders:
+        folder_hours = hours.get(folder)
+        sessions.append(
+            SessionInfo(
+                name=_session_label(folder),
+                start=session_datetime(folder),
+                duration=(
+                    dt.timedelta(hours=max(folder_hours)) if folder_hours else None
+                ),
+            )
+        )
     LOGGER.info(
-        "Event %s has %d sessions: %s", event_folder, len(sessions), ", ".join(sessions)
+        "Event %s has %d sessions: %s",
+        event_folder,
+        len(sessions),
+        ", ".join(s.name for s in sessions),
     )
     return sessions
 
 
-def fetch_event_date(
+def fetch_event_dates(
     host: str, season: str, event_folder: str, *, series_keyword: str | None = None
-) -> dt.datetime | None:
-    """Resolve an event's date (the race day), or ``None`` if it can't be found.
+) -> tuple[dt.date, dt.date] | None:
+    """Resolve the span of *dates* an event runs over (``(first, last)`` days).
 
-    Like :func:`fetch_event_sessions`, this reads the event's own page
-    (``?season=<id>&evvent=<folder>``) and derives the date from the session
-    folders' ``YYYYMMDDHHMM`` timestamps. The *latest* session is the race, so
-    its date is used as the event date.
+    Like :func:`fetch_event_sessions`, this reads the event's own page and uses
+    the session folders' ``YYYYMMDDHHMM`` timestamps -- but only their date part
+    (no time): the first and last calendar day of the race weekend. ``None`` if
+    no date can be parsed.
     """
     from endurancepy.logger import LOGGER
 
@@ -303,10 +339,13 @@ def fetch_event_date(
     pool = records
     if series_keyword is not None:
         pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
-    dates = [d for d in (session_datetime(r.session) for r in pool) if d]
-    date = max(dates) if dates else None
-    LOGGER.info("Event %s date resolved to %s", event_folder, date)
-    return date
+    days = [d.date() for d in (session_datetime(r.session) for r in pool) if d]
+    if not days:
+        LOGGER.info("Event %s has no resolvable dates", event_folder)
+        return None
+    span = (min(days), max(days))
+    LOGGER.info("Event %s runs from %s to %s", event_folder, span[0], span[1])
+    return span
 
 
 def find_event(events: list[EventInfo], query: str) -> EventInfo:

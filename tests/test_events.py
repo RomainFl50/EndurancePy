@@ -9,7 +9,7 @@ import pytest
 
 from endurancepy.alkamel.discovery import (
     build_events,
-    fetch_event_date,
+    fetch_event_dates,
     fetch_event_sessions,
     index_page,
     parse_events,
@@ -107,23 +107,34 @@ def test_fetch_event_sessions_orders_chronologically(
         "08_LE MANS",
         series_keyword="WEC",
     )
-    assert sessions == ["Free Practice 1", "Qualifying", "Race"]
+    assert [s.name for s in sessions] == ["Free Practice 1", "Qualifying", "Race"]
+    assert sessions[0].start == dt.datetime(2019, 6, 13, 10, 0)
+    assert sessions[0].duration is None  # no per-hour folders for practice
+    race = sessions[-1]
+    assert race.start == dt.datetime(2019, 6, 15, 15, 0)  # keeps time of day
+    assert race.duration == dt.timedelta(hours=24)  # from the "Hour 24" folder
 
 
 def test_event_get_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
-        f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
+        f"{_LM}/201906151500_Race/Hour 6/23_Analysis_Race_Hour 6.CSV",
     ]
     html = "".join(f'<a href="{p}">x</a>' for p in paths)
     monkeypatch.setattr(
         "endurancepy.alkamel.client.download", lambda url: html.encode()
     )
     event = _schedule().get_event_by_name("Le Mans")
-    assert event.get_sessions() == ["Free Practice 1", "Race"]
+    sessions = event.get_sessions()
+    assert list(sessions["Session"]) == ["Free Practice 1", "Race"]
+    assert sessions["StartTime"].iloc[1] == pd.Timestamp("2019-06-15 15:00")
+    assert sessions["Duration"].iloc[1] == pd.Timedelta(hours=6)
+    assert pd.isna(sessions["Duration"].iloc[0])
 
 
-def test_fetch_event_date_is_race_day(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fetch_event_dates_spans_the_weekend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
@@ -132,16 +143,16 @@ def test_fetch_event_date_is_race_day(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "endurancepy.alkamel.client.download", lambda url: html.encode()
     )
-    date = fetch_event_date(
+    dates = fetch_event_dates(
         "fiawec.alkamelsystems.com",
         "08_2018-2019",
         "08_LE MANS",
         series_keyword="WEC",
     )
-    assert date == dt.datetime(2019, 6, 15, 15, 0)  # latest session = race day
+    assert dates == (dt.date(2019, 6, 13), dt.date(2019, 6, 15))  # dates only
 
 
-def test_event_get_date(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_event_get_dates(monkeypatch: pytest.MonkeyPatch) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
@@ -151,7 +162,7 @@ def test_event_get_date(monkeypatch: pytest.MonkeyPatch) -> None:
         "endurancepy.alkamel.client.download", lambda url: html.encode()
     )
     event = _schedule().get_event_by_name("Le Mans")
-    assert event.get_date() == pd.Timestamp("2019-06-15 15:00")
+    assert event.get_dates() == (dt.date(2019, 6, 13), dt.date(2019, 6, 15))
 
 
 def test_event_get_session_carries_season() -> None:
