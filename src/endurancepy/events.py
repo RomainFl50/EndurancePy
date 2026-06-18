@@ -84,12 +84,16 @@ _SERIES_KEYWORDS: dict[Series, str] = {
 }
 
 #: Column dtypes of an :class:`EventSchedule`.
+#
+#: The calendar is built from the season page's event *menu* (event names only);
+#: an event's date and session list live on the event's own page and would each
+#: require an extra fetch per event. They are therefore fetched lazily, on
+#: demand, via :meth:`Event.get_date` / :meth:`Event.get_sessions` rather than
+#: eagerly here.
 _SCHEDULE_DTYPES: dict[str, str] = {
     "RoundNumber": "Int64",
     "EventName": "string",
     "EventFolder": "string",
-    "EventDate": "datetime64[ns]",
-    "Sessions": "object",
     "Series": "string",
     "Season": "string",
 }
@@ -191,6 +195,23 @@ class Event(pd.Series):
             series_keyword=self.series.keyword,
         )
 
+    def get_date(self) -> pd.Timestamp | None:
+        """Fetch this event's date (the race day), or ``None`` if unknown.
+
+        Like :meth:`get_sessions`, this is resolved on demand from the event's
+        own page (it is not part of the season calendar): the date is taken from
+        the event's last session's timestamp — i.e. the race day.
+        """
+        from endurancepy.alkamel import discovery
+
+        date = discovery.fetch_event_date(
+            self.series.host,
+            str(self["Season"]),
+            str(self["EventFolder"]),
+            series_keyword=self.series.keyword,
+        )
+        return pd.Timestamp(date) if date is not None else None
+
 
 def get_session(
     year: int,
@@ -248,8 +269,6 @@ def get_event_schedule(
             "RoundNumber": event.round,
             "EventName": event.name,
             "EventFolder": event.event_folder,
-            "EventDate": event.date,
-            "Sessions": list(event.sessions),
             "Series": resolved.name,
             "Season": season,
         }

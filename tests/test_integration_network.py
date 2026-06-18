@@ -53,10 +53,11 @@ def test_event_schedule_via_discovery() -> None:
     assert schedule.get_event_by_name("Spa")["EventName"]
     le_mans = schedule.get_event_by_name("Le Mans")
     assert le_mans["EventName"]
-    # the event's sessions are fetched from its own page (not just the race)
+    # the event's sessions and date are fetched on demand from its own page
     sessions = le_mans.get_sessions()
     assert len(sessions) > 1
     assert any("race" in s.lower() for s in sessions)
+    assert le_mans.get_date().year == 2019
 
 
 @pytest.mark.network

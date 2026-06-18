@@ -66,28 +66,26 @@ LAPS_COMPAT_COLUMNS: dict[str, str] = {
 }
 
 # --- Session results --------------------------------------------------------
+# One row per *car/crew* (the endurance unit): individual driver identity is not
+# meaningful at the classification level, so only the crew (drivers "; "-joined)
+# is kept. Counters (positions, grid, laps) are nullable integers (``Int64``),
+# never floats -- a finishing position of ``2`` should read ``2``, not ``2.0``.
 RESULTS_COLUMNS: dict[str, str] = {
     "CarNumber": "string",
     "Class": "string",
     "Manufacturer": "string",
     "TeamName": "string",
     "Crew": "string",  # the car's drivers, "; "-joined
-    "Position": "float64",
-    "PositionInClass": "float64",
+    "Position": "Int64",
+    "PositionInClass": "Int64",
     "ClassifiedPosition": "string",
     "ClassifiedPositionInClass": "string",
-    "GridPosition": "float64",
+    "GridPosition": "Int64",
     "Time": "timedelta64[ns]",
     "BestLapTime": "timedelta64[ns]",
     "Status": "string",
-    "Points": "float64",
-    "Laps": "float64",
-    # driver-level fields (the crew is a list of these)
-    "DriverNumber": "string",
-    "Abbreviation": "string",
-    "FirstName": "string",
-    "LastName": "string",
-    "FullName": "string",
+    "Points": "float64",  # may be fractional (half points), so kept as float
+    "Laps": "Int64",
 }
 
 # --- Weather ----------------------------------------------------------------

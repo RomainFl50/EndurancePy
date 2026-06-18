@@ -287,6 +287,28 @@ def fetch_event_sessions(
     return sessions
 
 
+def fetch_event_date(
+    host: str, season: str, event_folder: str, *, series_keyword: str | None = None
+) -> dt.datetime | None:
+    """Resolve an event's date (the race day), or ``None`` if it can't be found.
+
+    Like :func:`fetch_event_sessions`, this reads the event's own page
+    (``?season=<id>&evvent=<folder>``) and derives the date from the session
+    folders' ``YYYYMMDDHHMM`` timestamps. The *latest* session is the race, so
+    its date is used as the event date.
+    """
+    from endurancepy.logger import LOGGER
+
+    records = fetch_index(host, season, event=event_folder)
+    pool = records
+    if series_keyword is not None:
+        pool = [r for r in pool if series_keyword.lower() in r.series.lower()]
+    dates = [d for d in (session_datetime(r.session) for r in pool) if d]
+    date = max(dates) if dates else None
+    LOGGER.info("Event %s date resolved to %s", event_folder, date)
+    return date
+
+
 def find_event(events: list[EventInfo], query: str) -> EventInfo:
     """Return the event best matching ``query`` (name or folder)."""
     if not events:

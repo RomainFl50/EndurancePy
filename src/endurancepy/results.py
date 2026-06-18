@@ -29,6 +29,8 @@ def _empty_column(dtype: str, index: pd.Index) -> pd.Series:
         return pd.Series(pd.NaT, index=index, dtype="datetime64[ns]")
     if dtype == "float64":
         return pd.Series(np.nan, index=index, dtype="float64")
+    if dtype == "Int64":
+        return pd.Series(pd.NA, index=index, dtype="Int64")
     if dtype == "boolean":
         return pd.Series(pd.NA, index=index, dtype="boolean")
     return pd.Series(pd.NA, index=index, dtype="string")
@@ -62,7 +64,7 @@ def from_laps(laps: Laps, *, session: Session | None = None) -> SessionResults:
                 "Crew": "; ".join(drivers),
                 "Time": last["Time"],
                 "BestLapTime": group["LapTime"].min(),
-                "Laps": float(group["LapNumber"].max()),
+                "Laps": int(group["LapNumber"].max()),
                 "Status": "Finished",
             }
         )
@@ -71,14 +73,10 @@ def from_laps(laps: Laps, *, session: Session | None = None) -> SessionResults:
     summary = summary.sort_values(
         ["Laps", "Time"], ascending=[False, True]
     ).reset_index(drop=True)
-    summary["Position"] = (summary.index + 1).astype(float)
-    summary["PositionInClass"] = (
-        summary.groupby("Class", sort=False).cumcount() + 1
-    ).astype(float)
-    summary["ClassifiedPosition"] = summary["Position"].astype(int).astype(str)
-    summary["ClassifiedPositionInClass"] = (
-        summary["PositionInClass"].astype(int).astype(str)
-    )
+    summary["Position"] = summary.index + 1
+    summary["PositionInClass"] = summary.groupby("Class", sort=False).cumcount() + 1
+    summary["ClassifiedPosition"] = summary["Position"].astype(str)
+    summary["ClassifiedPositionInClass"] = summary["PositionInClass"].astype(str)
 
     index = pd.RangeIndex(len(summary))
     columns: dict[str, pd.Series] = {}

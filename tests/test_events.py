@@ -9,6 +9,7 @@ import pytest
 
 from endurancepy.alkamel.discovery import (
     build_events,
+    fetch_event_date,
     fetch_event_sessions,
     index_page,
     parse_events,
@@ -75,8 +76,6 @@ def _schedule() -> EventSchedule:
             "RoundNumber": [7, 8],
             "EventName": ["SPA FRANCORCHAMPS", "LE MANS"],
             "EventFolder": ["07_SPA FRANCORCHAMPS", "08_LE MANS"],
-            "EventDate": [dt.datetime(2019, 5, 4), dt.datetime(2019, 6, 15)],
-            "Sessions": [["Free Practice 1", "Race"], ["Race"]],
             "Series": ["WEC", "WEC"],
             "Season": ["08_2018-2019", "08_2018-2019"],
         }
@@ -122,6 +121,37 @@ def test_event_get_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     event = _schedule().get_event_by_name("Le Mans")
     assert event.get_sessions() == ["Free Practice 1", "Race"]
+
+
+def test_fetch_event_date_is_race_day(monkeypatch: pytest.MonkeyPatch) -> None:
+    paths = [
+        f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
+        f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
+    ]
+    html = "".join(f'<a href="{p}">x</a>' for p in paths)
+    monkeypatch.setattr(
+        "endurancepy.alkamel.client.download", lambda url: html.encode()
+    )
+    date = fetch_event_date(
+        "fiawec.alkamelsystems.com",
+        "08_2018-2019",
+        "08_LE MANS",
+        series_keyword="WEC",
+    )
+    assert date == dt.datetime(2019, 6, 15, 15, 0)  # latest session = race day
+
+
+def test_event_get_date(monkeypatch: pytest.MonkeyPatch) -> None:
+    paths = [
+        f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
+        f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
+    ]
+    html = "".join(f'<a href="{p}">x</a>' for p in paths)
+    monkeypatch.setattr(
+        "endurancepy.alkamel.client.download", lambda url: html.encode()
+    )
+    event = _schedule().get_event_by_name("Le Mans")
+    assert event.get_date() == pd.Timestamp("2019-06-15 15:00")
 
 
 def test_event_get_session_carries_season() -> None:

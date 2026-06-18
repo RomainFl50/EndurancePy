@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   qualifying / race, in chronological order). The schedule's `Sessions` column
   was empty because the calendar is built from the season's event *menu* (event
   names only); the sessions live on each event's page.
+- `Event.get_date()` (backed by `discovery.fetch_event_date`) resolves an
+  event's date on demand from its own page — the race day, taken from the latest
+  session's timestamp. Same rationale as `get_sessions()`: the date isn't in the
+  season's event menu.
 
 ### Added
 
@@ -47,6 +51,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Session results are now strictly **per car/crew**: the always-empty
+  per-driver columns (`DriverNumber`, `Abbreviation`, `FirstName`, `LastName`,
+  `FullName`) were removed — at the classification level the crew is what
+  matters, and it is kept as `Crew` (drivers `"; "`-joined). Position/lap
+  counters (`Position`, `PositionInClass`, `GridPosition`, `Laps`) are now
+  nullable integers (`Int64`) instead of floats, so they read `2`, not `2.0`.
+- The event schedule no longer carries the always-empty `EventDate`/`Sessions`
+  columns. The calendar is built from the season's event *menu* (names only);
+  an event's date and session list each live on the event's own page, so they
+  are fetched lazily via `Event.get_date()` / `Event.get_sessions()` instead of
+  forcing a per-event fetch when building the schedule.
 - Examples now all load a real session over the network
   (`Session.load(season=...)` / `get_event_schedule`) instead of taking a local
   CSV path. CI still exercises them offline by faking the download layer (no
