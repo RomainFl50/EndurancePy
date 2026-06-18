@@ -119,6 +119,11 @@ See the **[usage guide](docs/usage.md)** and runnable **[examples/](examples/)**
 - [x] `plotting` colour helpers (by class / manufacturer)
 - [x] Championship standings (configurable points calculator)
 - [ ] Docs, tests, packaging & PyPI release
+- [ ] **0.3.0 — plotting**: chart helpers (strategy, race trace, pace…), colour/style
+  system, lap-time axes, track-status overlay
+
+See **[ROADMAP.md](ROADMAP.md)** for the detailed plan and the plotting library
+evaluation.
 
 ## How it relates to FastF1
 

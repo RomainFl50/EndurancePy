@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 
-- **0.3.0 will focus on plotting.** The colour helpers (`get_class_color` /
-  `get_manufacturer_color`) are only a foundation; the next release is about
-  improving everything plotting-related — ready-made chart helpers (pace by
-  class, lap evolution, stint/strategy, gaps), better styling/theming, and
-  richer plotting examples — rather than leaving every figure to be hand-built.
+- **0.3.0 will focus on plotting** — ready-made chart helpers (strategy/stint
+  Gantt, race trace, pace, lap evolution, gaps), a colour/style system beyond the
+  current class/manufacturer colours, lap-time axis formatting and a track-status
+  overlay. See [`ROADMAP.md`](ROADMAP.md) for the full plan and the plotting
+  library evaluation.
 
 ## [0.2.0] - 2026-06-18
 
