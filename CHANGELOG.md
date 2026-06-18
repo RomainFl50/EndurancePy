@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+
+- **0.3.0 will focus on plotting.** The colour helpers (`get_class_color` /
+  `get_manufacturer_color`) are only a foundation; the next release is about
+  improving everything plotting-related — ready-made chart helpers (pace by
+  class, lap evolution, stint/strategy, gaps), better styling/theming, and
+  richer plotting examples — rather than leaving every figure to be hand-built.
+
+## [0.2.0] - 2026-06-18
+
 ### Added
 
 - `format_timedelta` / `format_laptime` render a duration as a readable
@@ -31,11 +41,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   season page's event menu), not just the last/expanded one. Loading a session
   fetches that event's own page (`&evvent=`), so any event of the season can be
   loaded — previously only the most recent event was discoverable.
-- An event's session list is now populated on demand: `Event.get_sessions()`
-  fetches the event's own page and returns its session names (practice /
-  qualifying / race, in chronological order). The schedule's `Sessions` column
-  was empty because the calendar is built from the season's event *menu* (event
-  names only); the sessions live on each event's page.
+- An event's session schedule is now populated on demand: `Event.get_sessions()`
+  fetches the event's own page and returns a `DataFrame` (one row per session,
+  chronological) with `Session`, `StartTime` (date **and** time of day) and
+  `Duration` (the race length, derived from the portal's per-hour folders; `NaT`
+  for practice/qualifying, whose length the file index does not encode). The
+  schedule's `Sessions` column was empty because the calendar is built from the
+  season's event *menu* (event names only); the sessions live on each event's
+  page.
+- `Event.get_dates()` (backed by `discovery.fetch_event_dates`) resolves the
+  span of *dates* a weekend runs over — `(first_day, last_day)`, dates only, no
+  time of day — on demand from the event's own page. Same rationale as
+  `get_sessions()`: the dates aren't in the season's event menu.
 
 ### Added
 
@@ -47,6 +64,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Session results are now strictly **per car/crew**: the always-empty
+  per-driver columns (`DriverNumber`, `Abbreviation`, `FirstName`, `LastName`,
+  `FullName`) were removed — at the classification level the crew is what
+  matters, and it is kept as `Crew` (drivers `"; "`-joined). Position/lap
+  counters (`Position`, `PositionInClass`, `GridPosition`, `Laps`) are now
+  nullable integers (`Int64`) instead of floats, so they read `2`, not `2.0`.
+- The event schedule no longer carries the always-empty `EventDate`/`Sessions`
+  columns. The calendar is built from the season's event *menu* (names only);
+  an event's dates and session schedule each live on the event's own page, so
+  they are fetched lazily via `Event.get_dates()` / `Event.get_sessions()`
+  instead of forcing a per-event fetch when building the schedule.
 - Examples now all load a real session over the network
   (`Session.load(season=...)` / `get_event_schedule`) instead of taking a local
   CSV path. CI still exercises them offline by faking the download layer (no
@@ -184,5 +212,6 @@ Le Mans Cup, IMSA) from the Al Kamel archives, with a FastF1-style API.
     `list_classes`/`list_manufacturers` and `setup_mpl` (needs the `plot`
     extra). Colours are organised by class and manufacturer rather than driver.
 
-[Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RomainFl50/EndurancePy/releases/tag/v0.1.0

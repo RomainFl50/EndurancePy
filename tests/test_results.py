@@ -68,6 +68,20 @@ def test_classified_position_strings(results: SessionResults) -> None:
     assert _car(results, "83")["ClassifiedPositionInClass"] == "1"
 
 
+def test_counters_are_integers(results: SessionResults) -> None:
+    # positions / laps are nullable integers, not floats ("2", not "2.0")
+    for column in ("Position", "PositionInClass", "GridPosition", "Laps"):
+        assert results[column].dtype == "Int64"
+    assert str(_car(results, "7")["Position"]) == "2"
+    assert str(_car(results, "7")["Laps"]) == "4"
+
+
+def test_no_per_driver_columns(results: SessionResults) -> None:
+    # the classification is per car/crew; individual driver fields are dropped
+    for column in ("DriverNumber", "Abbreviation", "FirstName", "LastName", "FullName"):
+        assert column not in results.columns
+
+
 def test_pick_classes_on_results(results: SessionResults) -> None:
     assert set(results.pick_classes("HYPERCAR")["CarNumber"]) == {"7", "8"}
 

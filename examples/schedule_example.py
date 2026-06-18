@@ -27,8 +27,10 @@ def main(series: str = "WEC", year: int = 2019) -> None:
     print(schedule[["RoundNumber", "EventName"]].to_string(index=False))
 
     event = schedule.get_event_by_name("Le Mans")
-    sessions = event.get_sessions()  # fetched from the event's own page
-    print(f"\n{event['EventName']} sessions: {', '.join(sessions)}")
+    # dates and sessions live on the event's own page (fetched on demand)
+    start, end = event.get_dates()  # the weekend's date span (dates only)
+    print(f"\n{event['EventName']} runs from {start} to {end}:")
+    print(event.get_sessions().to_string(index=False))  # name, start time, duration
 
     session = event.get_race()  # already knows its season
     session.load()
