@@ -108,6 +108,7 @@ def to_laps(raw: pd.DataFrame, *, session: Session | None = None) -> Laps:
     _derive_gaps(df)
     _derive_accuracy(df)
 
+    df["PitTime"] = df["_PitTime"]  # keep the reported pit time (in-laps only)
     df = df.drop(columns=["_PitTime", "_Pitted"])
     return _finalize(df, session=session)
 

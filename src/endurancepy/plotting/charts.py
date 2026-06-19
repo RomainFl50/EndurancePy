@@ -30,6 +30,7 @@ __all__ = [
     "plot_gap",
     "plot_lap_evolution",
     "plot_pace",
+    "plot_pit_stops",
     "plot_position_evolution",
     "plot_race_trace",
     "plot_stint_pace",
@@ -562,6 +563,46 @@ def plot_driver_comparison(
             fig.add_box(y=laptimes, name=driver, marker_color=color)
     fig.update_layout(xaxis_title="Driver", yaxis_title="Lap time", showlegend=False)
     fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_pit_stops(source: Any, *, title: str = "Pit stops") -> go.Figure:
+    """When each car pitted and for how long — a bubble per stop, by class.
+
+    x = in-lap, y = car, bubble size = time in the pits (hover shows it); coloured
+    by class. Builds on :func:`endurancepy.strategy.pit_stops`.
+    """
+    go = _import_go()
+    from endurancepy.strategy import pit_stops
+
+    fig = go.Figure(layout={"title": title})
+    stops = pit_stops(source)
+    if stops.empty:
+        return fig
+    stops = stops.copy()
+    stops["_secs"] = stops["PitTime"].dt.total_seconds()
+    stops["_fmt"] = stops["PitTime"].map(format_timedelta)
+    longest = stops["_secs"].max()
+    sizeref = 2.0 * (longest if longest and longest > 0 else 1.0) / (36.0**2)
+    for klass, rows in stops.groupby("Class", sort=True):
+        fig.add_scatter(
+            x=rows["Lap"],
+            y=rows["CarNumber"],
+            mode="markers",
+            name=str(klass),
+            legendgroup=str(klass),
+            marker={
+                "color": get_class_color(str(klass)),
+                "size": rows["_secs"].fillna(0.0),
+                "sizemode": "area",
+                "sizeref": sizeref,
+                "sizemin": 5,
+            },
+            customdata=rows["_fmt"],
+            hovertemplate="Car %{y} · lap %{x}<br>pit %{customdata}<extra></extra>",
+        )
+    fig.update_layout(xaxis_title="Lap number", yaxis_title="Car", legend_title="Class")
+    fig.update_xaxes(rangemode="tozero")
     return fig
 
 

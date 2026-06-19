@@ -36,6 +36,7 @@ from endurancepy.events import (
 )
 from endurancepy.logger import enable_console_logging, set_log_level
 from endurancepy.standings import Standings, compute_standings
+from endurancepy.strategy import pit_stops
 from endurancepy.utils import format_laptime, format_timedelta
 
 try:
@@ -58,6 +59,7 @@ __all__ = [
     "get_event_schedule",
     "get_session",
     "list_seasons",
+    "pit_stops",
     "read_analysis",
     "read_classification",
     "read_weather",

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Strategy analysis (0.4.0, in progress).** First slice — pit stops:
+  - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
+    (previously discarded).
+  - `endurancepy.pit_stops(session|laps)` — one row per stop (car, in-lap, stint
+    that ended, time in the pits, class / manufacturer / team).
+  - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
+    in the pits), coloured by class.
+
 - **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns
   a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`

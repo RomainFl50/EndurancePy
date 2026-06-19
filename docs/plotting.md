@@ -30,6 +30,7 @@ session.load(season="08_2018-2019")
 | Function | What it shows |
 |---|---|
 | `plot_strategy(session)` | Stint/strategy Gantt — one bar per stint per car; gaps are pit stops; driver changes marked. |
+| `plot_pit_stops(session)` | A bubble per pit stop (x = lap, y = car, size = time in the pits). |
 | `plot_lap_evolution(session)` | Lap time vs lap, one line per car (clock axis). |
 | `plot_pace(session, kind="box"\|"violin")` | Lap-time distribution per class. |
 | `plot_stint_pace(session, car=...)` | Lap time vs lap-in-stint — tyre/fuel degradation. |

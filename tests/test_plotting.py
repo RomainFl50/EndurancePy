@@ -192,6 +192,15 @@ def test_plot_top_speeds_one_box_per_class() -> None:
     assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
 
 
+def test_plot_pit_stops_one_bubble_per_stop() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_pit_stops(read_analysis(FIXTURE))
+    # only car 7 pits -> one HYPERCAR bubble at lap 2
+    assert [t.name for t in fig.data] == ["HYPERCAR"]
+    assert list(fig.data[0].x) == [2]
+    assert list(fig.data[0].y) == ["7"]
+
+
 def test_add_track_status_shades_field_neutralisations() -> None:
     pytest.importorskip("plotly.graph_objects")
     laps = read_analysis(FIXTURE)
