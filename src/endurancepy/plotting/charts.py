@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     import plotly.graph_objects as go
 
 __all__ = [
+    "add_day_night",
     "add_track_status",
     "plot_driver_comparison",
     "plot_fastest_laps",
@@ -427,6 +428,53 @@ def add_track_status(fig: go.Figure, source: Any) -> go.Figure:
             line_width=0,
             layer="below",
             annotation_text=label,
+            annotation_position="top left",
+        )
+    return fig
+
+
+def add_day_night(
+    fig: go.Figure,
+    source: Any,
+    *,
+    night_start: float = 20.0,
+    night_end: float = 6.0,
+) -> go.Figure:
+    """Shade the night-time lap windows on a lap-axis chart (for 24h races).
+
+    Uses the per-lap ``Hour`` (time of day, populated by the Analysis parser):
+    laps whose hour is ``>= night_start`` or ``< night_end`` count as night. Adds
+    a dark band over each contiguous night run. A no-op when ``Hour`` is absent or
+    the race ran entirely in daylight. Returns ``fig`` for chaining.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or "Hour" not in frame:
+        return fig
+    hours = frame.dropna(subset=["LapNumber", "Hour"])
+    if hours.empty:
+        return fig
+
+    per_lap = hours.groupby("LapNumber")["Hour"].median()
+    runs: list[tuple[float, float]] = []
+    current: tuple[float, float] | None = None
+    for lap, hour in per_lap.items():
+        if hour >= night_start or hour < night_end:
+            current = (current[0], float(lap)) if current else (float(lap), float(lap))
+        elif current:
+            runs.append(current)
+            current = None
+    if current:
+        runs.append(current)
+
+    for start, end in runs:
+        fig.add_vrect(
+            x0=start - 0.5,
+            x1=end + 0.5,
+            fillcolor="#1A237E",
+            opacity=0.12,
+            line_width=0,
+            layer="below",
+            annotation_text="Night",
             annotation_position="top left",
         )
     return fig

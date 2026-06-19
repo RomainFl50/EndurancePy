@@ -201,6 +201,19 @@ def test_plot_pit_stops_one_bubble_per_stop() -> None:
     assert list(fig.data[0].y) == ["7"]
 
 
+def test_add_day_night_shades_night_laps() -> None:
+    import pandas as pd
+
+    laps = read_analysis(FIXTURE)
+    # the fixture runs at ~14:00 -> daylight only, no bands
+    day = plotting.add_day_night(plotting.plot_gap(laps), laps)
+    assert len(day.layout.shapes) == 0
+    # a frame with night-time laps gets one shaded band
+    night = pd.DataFrame({"LapNumber": [1.0, 2.0, 3.0], "Hour": [14.0, 23.0, 2.0]})
+    shaded = plotting.add_day_night(plotting.plot_gap(laps), night)
+    assert len(shaded.layout.shapes) == 1
+
+
 def test_add_track_status_shades_field_neutralisations() -> None:
     pytest.importorskip("plotly.graph_objects")
     laps = read_analysis(FIXTURE)

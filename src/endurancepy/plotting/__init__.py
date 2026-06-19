@@ -15,6 +15,7 @@ per-driver colours). Heavy backends are optional extras: ``endurancepy[plot]``
 from __future__ import annotations
 
 from endurancepy.plotting.charts import (
+    add_day_night,
     add_track_status,
     plot_driver_comparison,
     plot_fastest_laps,
@@ -48,6 +49,7 @@ __all__ = [
     "DEFAULT_COLOR",
     "MANUFACTURER_COLORS",
     "TEAM_COLORS",
+    "add_day_night",
     "add_track_status",
     "format_time_axis",
     "get_car_style",

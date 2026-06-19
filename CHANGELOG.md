@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in the pits), coloured by class.
   - The Analysis parser now fills **`Hour`** (time of day, decimal hours, from the
     CSV `HOUR` column) — enables a time axis and day/night analysis.
+  - `plotting.add_day_night(fig, source)` — shade the night-time lap windows on any
+    lap-axis chart (uses `Hour`), for 24h races.
 
 - **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns

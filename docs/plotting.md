@@ -41,6 +41,7 @@ session.load(season="08_2018-2019")
 | `plot_driver_comparison(session, car)` | Pace distribution per driver in a crew. |
 | `plot_top_speeds(session)` | Top-speed (km/h) distribution per class. |
 | `add_track_status(fig, session)` | Shade FCY / safety-car / code-60 / red-flag lap windows on any lap-axis chart. |
+| `add_day_night(fig, session)` | Shade the night-time lap windows (uses `Hour`) — for 24h races. |
 
 ```python
 plotting.plot_strategy(session).show()
