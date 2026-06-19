@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Strategy analysis (0.4.0, in progress).** First slice — pit stops:
+- **Strategy analysis (0.4.0, in progress).**
   - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
     (previously discarded).
   - `endurancepy.pit_stops(session|laps)` — one row per stop (car, in-lap, stint
     that ended, time in the pits, class / manufacturer / team).
+  - `endurancepy.stint_summary(session|laps)` — one row per `(car, stint)`:
+    driver, lap span, best/median lap and a **degradation** slope (s/lap).
+  - `endurancepy.driver_summary(session|laps)` — one row per `(car, driver)`:
+    laps, time in car, best/median lap and consistency (lap-time std-dev).
   - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
     in the pits), coloured by class.
 

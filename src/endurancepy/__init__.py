@@ -36,7 +36,7 @@ from endurancepy.events import (
 )
 from endurancepy.logger import enable_console_logging, set_log_level
 from endurancepy.standings import Standings, compute_standings
-from endurancepy.strategy import pit_stops
+from endurancepy.strategy import driver_summary, pit_stops, stint_summary
 from endurancepy.utils import format_laptime, format_timedelta
 
 try:
@@ -52,6 +52,7 @@ __all__ = [
     "Standings",
     "__version__",
     "compute_standings",
+    "driver_summary",
     "enable_console_logging",
     "format_laptime",
     "format_timedelta",
@@ -64,4 +65,5 @@ __all__ = [
     "read_classification",
     "read_weather",
     "set_log_level",
+    "stint_summary",
 ]

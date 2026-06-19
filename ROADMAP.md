@@ -130,10 +130,11 @@ its keep for analysts.
 - **Pit-stop analysis** — ✅ the raw `PitTime` is now kept on each in-lap;
   `pit_stops()` lists every stop and `plot_pit_stops` charts them. Still to come:
   per-stop pit-lane loss and **undercut / overcut** detection.
-- **Stint & degradation** — fuel-corrected pace, a per-stint degradation slope and
-  tyre-life estimate, "best achievable" vs actual.
-- **Driver analysis** — per-driver pace (median + consistency), time in car, day
-  vs night running, best/worst stint; crew comparison across the whole race.
+- **Stint & degradation** — ✅ `stint_summary()` gives per-stint best/median pace
+  and a degradation slope (s/lap). Still to come: fuel correction and tyre-life
+  estimates.
+- **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
+  pace and consistency. Still to come: day vs night running, best/worst stint.
 - **Gap / interval engine** — real on-track intervals (not just lap-aligned),
   time lost in traffic, **battle detection** (cars within Xs for N laps), lead
   changes and laps-in-the-lead per car/class.

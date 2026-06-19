@@ -49,3 +49,44 @@ def test_pit_stops_empty_laps() -> None:
     stops = ep.pit_stops(_laps().iloc[0:0])
     assert stops.empty
     assert "PitTime" in stops.columns  # still a well-formed (empty) table
+
+
+def _stint(table: pd.DataFrame, car: str, stint: int) -> pd.Series:
+    row = table[(table["CarNumber"] == car) & (table["Stint"] == stint)]
+    assert len(row) == 1
+    return row.iloc[0]
+
+
+def test_stint_summary() -> None:
+    stints = ep.stint_summary(_laps())
+    assert len(stints) == 4  # car 7 has 2 stints; cars 8 and 83 one each
+    # car 8's single 4-lap stint: pace + a (negative = improving) degradation slope
+    car8 = _stint(stints, "8", 1)
+    assert car8["Driver"] == "C CCC"
+    assert car8["Laps"] == 4
+    assert car8["BestLap"] == pd.Timedelta(seconds=95)
+    assert pd.notna(car8["Degradation"]) and car8["Degradation"] < 0
+    # car 7's first stint has a single clean lap -> no degradation slope
+    car7 = _stint(stints, "7", 1)
+    assert car7["Driver"] == "A AAA"
+    assert pd.isna(car7["Degradation"])
+
+
+def test_driver_summary() -> None:
+    drivers = ep.driver_summary(_laps())
+    assert set(drivers["Driver"]) == {"A AAA", "B BBB", "C CCC", "D DDD"}
+    c = drivers[drivers["Driver"] == "C CCC"].iloc[0]
+    assert c["Laps"] == 4
+    assert c["TimeInCar"] == pd.Timedelta(seconds=381.7)  # 96+95.5+95+95.2
+    assert c["BestLap"] == pd.Timedelta(seconds=95)
+    assert pd.notna(c["Consistency"]) and c["Consistency"] > 0
+    # a one-clean-lap driver has no consistency figure
+    a = drivers[drivers["Driver"] == "A AAA"].iloc[0]
+    assert a["Laps"] == 2
+    assert pd.isna(a["Consistency"])
+
+
+def test_summaries_empty_laps() -> None:
+    empty = _laps().iloc[0:0]
+    assert ep.stint_summary(empty).empty
+    assert ep.driver_summary(empty).empty
