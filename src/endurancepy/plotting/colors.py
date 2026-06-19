@@ -1,10 +1,8 @@
-"""Plotting helpers, mirroring :mod:`fastf1.plotting`.
+"""Colour registries for plotting, organised by **class** and **manufacturer**.
 
-For endurance racing, colour helpers are organised by **class** and by
-**manufacturer** rather than by driver. The colour lookups are pure functions
-(they return hex strings and need no plotting backend); only :func:`setup_mpl`
-requires matplotlib, which is provided by the optional ``plot`` extra
-(``pip install endurancepy[plot]``).
+For endurance racing, colours are keyed by racing class (Hypercar / LMP2 /
+LMGT3…) and by manufacturer rather than by driver. These lookups are pure
+functions returning hex strings and need no plotting backend.
 """
 
 from __future__ import annotations
@@ -15,7 +13,6 @@ __all__ = [
     "get_manufacturer_color",
     "list_classes",
     "list_manufacturers",
-    "setup_mpl",
 ]
 
 #: Fallback colour for unknown classes/manufacturers.
@@ -81,21 +78,3 @@ def list_classes() -> list[str]:
 def list_manufacturers() -> list[str]:
     """Return the known manufacturer names."""
     return list(MANUFACTURER_COLORS)
-
-
-def setup_mpl() -> None:
-    """Apply EndurancePy's default matplotlib styling.
-
-    Requires the optional ``plot`` extra (matplotlib).
-    """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError as exc:  # pragma: no cover - depends on optional extra
-        raise ImportError(
-            "matplotlib is required for setup_mpl(); install endurancepy[plot]."
-        ) from exc
-
-    plt.rcParams["figure.figsize"] = (10.0, 5.0)
-    plt.rcParams["axes.grid"] = True
-    plt.rcParams["grid.alpha"] = 0.3
-    plt.rcParams["legend.frameon"] = False

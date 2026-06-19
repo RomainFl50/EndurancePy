@@ -1,14 +1,20 @@
-"""Tests for the plotting colour helpers (no plotting backend required)."""
+"""Tests for the plotting helpers.
+
+The colour helpers need no backend; the chart tests self-skip without plotly.
+"""
 
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
 
 from endurancepy import plotting
+from endurancepy.alkamel.analysis import read_analysis
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+FIXTURE = Path(__file__).parent / "fixtures" / "analysis_sample.csv"
 
 
 def test_class_color_case_insensitive() -> None:
@@ -41,3 +47,32 @@ def test_registries_are_valid_hex() -> None:
 def test_setup_mpl_if_available() -> None:
     pytest.importorskip("matplotlib")
     plotting.setup_mpl()  # should not raise when matplotlib is installed
+
+
+def test_plot_strategy_one_bar_per_stint() -> None:
+    go = pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE)
+    fig = plotting.plot_strategy(laps)
+
+    assert isinstance(fig, go.Figure)
+    # one trace per class, coloured by the class palette
+    assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
+    assert fig.data[0].marker.color == plotting.get_class_color("HYPERCAR")
+    # one bar per (car, stint): car 7 pits & changes driver -> 2 stints
+    assert sum(len(t.y) for t in fig.data) == 4
+    hypercar = fig.data[0]
+    car7 = [
+        (base, length)
+        for car, base, length in zip(hypercar.y, hypercar.base, hypercar.x, strict=True)
+        if car == "7"
+    ]
+    assert car7 == [(1, 2), (3, 2)]  # laps 1-2 then 3-4
+    # cars ordered by class then number
+    assert fig.layout.yaxis.categoryarray == ("7", "8", "83")
+
+
+def test_plot_strategy_empty_laps() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE).iloc[0:0]
+    fig = plotting.plot_strategy(laps)
+    assert len(fig.data) == 0  # no bars, but a valid (empty) figure

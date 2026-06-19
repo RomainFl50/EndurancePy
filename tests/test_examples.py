@@ -105,3 +105,9 @@ def test_plot_lap_evolution(session: Session, tmp_path: Path) -> None:
     pytest.importorskip("matplotlib")
     output = _load("plot_lap_evolution").plot(session, tmp_path / "evo.png")
     assert output.exists() and output.stat().st_size > 0
+
+
+def test_plot_strategy(session: Session, tmp_path: Path) -> None:
+    pytest.importorskip("plotly")
+    output = _load("plot_strategy").plot(session, tmp_path / "strategy.html")
+    assert output.exists() and output.stat().st_size > 0

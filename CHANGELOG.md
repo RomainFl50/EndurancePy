@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Interactive plotting (0.3.0, in progress).** `plotting.plot_strategy(session)`
+  builds an interactive **stint/strategy chart** (Plotly): one horizontal bar per
+  stint, per car, coloured by class, with the gaps between a car's bars showing
+  its pit stops and the hover giving the stint's driver and lap range. Returns a
+  native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
+  extra (`pip install endurancepy[interactive]`). The `plotting` module is now a
+  package (`colors` / `style` / `charts`); all existing names are unchanged.
+  Example: [`examples/plot_strategy.py`](examples/plot_strategy.py).
+
 ### Planned
 
 - **0.3.0 will focus on plotting** — ready-made chart helpers (strategy/stint
