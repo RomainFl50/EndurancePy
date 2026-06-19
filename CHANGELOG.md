@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `plotting.plot_position_evolution` — position vs lap (overall or `in_class`).
   - `plotting.plot_gap` — gap to the (class) leader over the laps.
   - `plotting.plot_race_trace` — cumulative delta to a constant reference pace.
+  - `plotting.plot_fastest_laps` — each car's best lap as a bar (delta to the
+    overall best), sorted, by class.
+  - `plotting.plot_stint_pace` — lap time vs lap-in-stint (degradation), one line
+    per stint; `car=` to focus on one car.
+  - `plotting.plot_driver_comparison(source, car)` — pace distribution per driver
+    within a crew.
+  - `plotting.plot_top_speeds` — top-speed (km/h) distribution per class.
+  - `plot_pace(kind="violin")` — box (default) or violin distributions.
   - `plotting.add_track_status(fig, source)` — shade FCY / safety-car / code-60 /
     red-flag lap windows on any lap-axis chart.
   - `plotting.get_car_style(car, class)` — class colour + a per-car dash/marker so

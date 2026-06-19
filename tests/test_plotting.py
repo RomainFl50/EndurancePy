@@ -111,6 +111,44 @@ def test_plot_pace_one_box_per_class() -> None:
     assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
 
 
+def test_plot_pace_violin() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_pace(read_analysis(FIXTURE), kind="violin")
+    assert [t.type for t in fig.data] == ["violin", "violin"]
+
+
+def test_plot_fastest_laps_delta_to_best() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_fastest_laps(read_analysis(FIXTURE))
+    assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
+    # cars ordered quickest-first; the overall best gets a zero-length bar
+    assert fig.layout.yaxis.categoryarray == ("7", "8", "83")
+    assert fig.data[0].x[0] == 0.0  # car 7, fastest overall
+    assert fig.data[0].x[1] == 0.5  # car 8, +0.5s
+
+
+def test_plot_stint_pace_one_line_per_stint() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE)
+    assert len(plotting.plot_stint_pace(laps).data) == 4  # car 7 has 2 stints
+    assert [t.name for t in plotting.plot_stint_pace(laps, car="7").data] == [
+        "#7 stint 1",
+        "#7 stint 2",
+    ]
+
+
+def test_plot_driver_comparison_one_box_per_driver() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_driver_comparison(read_analysis(FIXTURE), "7")
+    assert [t.name for t in fig.data] == ["A AAA", "B BBB"]
+
+
+def test_plot_top_speeds_one_box_per_class() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_top_speeds(read_analysis(FIXTURE))
+    assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
+
+
 def test_add_track_status_shades_field_neutralisations() -> None:
     pytest.importorskip("plotly.graph_objects")
     laps = read_analysis(FIXTURE)

@@ -16,12 +16,16 @@ from __future__ import annotations
 
 from endurancepy.plotting.charts import (
     add_track_status,
+    plot_driver_comparison,
+    plot_fastest_laps,
     plot_gap,
     plot_lap_evolution,
     plot_pace,
     plot_position_evolution,
     plot_race_trace,
+    plot_stint_pace,
     plot_strategy,
+    plot_top_speeds,
 )
 from endurancepy.plotting.colors import (
     CLASS_COLORS,
@@ -45,11 +49,15 @@ __all__ = [
     "get_manufacturer_color",
     "list_classes",
     "list_manufacturers",
+    "plot_driver_comparison",
+    "plot_fastest_laps",
     "plot_gap",
     "plot_lap_evolution",
     "plot_pace",
     "plot_position_evolution",
     "plot_race_trace",
+    "plot_stint_pace",
     "plot_strategy",
+    "plot_top_speeds",
     "setup_mpl",
 ]

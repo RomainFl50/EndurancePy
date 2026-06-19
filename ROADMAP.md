@@ -37,11 +37,14 @@ never showing/blocking internally. (✅ = shipped.)
 - ✅ **`plot_position_evolution(session)`** — position lap-by-lap, overall and per
   class (`in_class=`).
 - ✅ **`plot_gap(session)`** — gap to the (class) leader over the laps.
-- ✅ **`plot_pace(session)`** / ✅ **`plot_lap_evolution(session)`** — pace box per
-  class and the per-car evolution lines.
-- **`plot_driver_comparison(car)`** — pace distribution per driver within a crew.
-- Mark pit stops / driver changes explicitly on `plot_strategy`; add violin to
-  `plot_pace`.
+- ✅ **`plot_pace(session)`** (box/violin) / ✅ **`plot_lap_evolution(session)`** —
+  pace distribution per class and the per-car evolution lines.
+- ✅ **`plot_driver_comparison(car)`** — pace distribution per driver within a crew.
+- ✅ **`plot_fastest_laps`** — best lap per car (delta to overall best), by class.
+- ✅ **`plot_stint_pace`** — lap time vs lap-in-stint (tyre/fuel degradation).
+- ✅ **`plot_top_speeds`** — top-speed distribution per class.
+- Mark pit stops / driver changes explicitly on `plot_strategy` (pit-stop
+  *durations* need the raw `PIT_TIME`, not currently kept — see backlog).
 
 ### Colour & style system
 
@@ -120,8 +123,9 @@ Not scheduled, roughly by value:
   only for races (from the per-hour folders). True durations for practice/
   qualifying need the lap data (last lap's `Time`); candidate for an opt-in
   `get_sessions(exact=True)` or an `EndTime` column.
-- **Gaps & per-lap positions** computed in the loader (also a plotting prereq, see
-  above) — useful on their own for analysis, not just charts.
+- **Pit-stop analysis** (count, stationary time, pit loss). The raw `PIT_TIME` is
+  currently dropped and the stationary time is folded into the out-lap, so a
+  reliable pit-stop chart needs `PIT_TIME` kept on the laps first.
 - **Classification-CSV parser.** Results are currently reconstructed from the laps;
   parse the real Classification CSV once its layout is fully verified (grid,
   points, status straight from source).

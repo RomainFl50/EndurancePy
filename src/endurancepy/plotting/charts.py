@@ -25,12 +25,16 @@ if TYPE_CHECKING:
 
 __all__ = [
     "add_track_status",
+    "plot_driver_comparison",
+    "plot_fastest_laps",
     "plot_gap",
     "plot_lap_evolution",
     "plot_pace",
     "plot_position_evolution",
     "plot_race_trace",
+    "plot_stint_pace",
     "plot_strategy",
+    "plot_top_speeds",
 ]
 
 #: Anchor a timedelta onto a clock so a Plotly date axis renders M:SS.mmm ticks.
@@ -227,8 +231,13 @@ def plot_lap_evolution(source: Any, *, title: str = "Lap-time evolution") -> go.
     return fig
 
 
-def plot_pace(source: Any, *, title: str = "Pace by class") -> go.Figure:
-    """Lap-time distribution as one box per class (y-axis reads ``M:SS.mmm``)."""
+def plot_pace(
+    source: Any, *, kind: str = "box", title: str = "Pace by class"
+) -> go.Figure:
+    """Lap-time distribution per class (y-axis reads ``M:SS.mmm``).
+
+    ``kind`` is ``"box"`` (default) or ``"violin"``.
+    """
     go = _import_go()
     fig = go.Figure(layout={"title": title})
     frame = _prep(source)
@@ -237,12 +246,16 @@ def plot_pace(source: Any, *, title: str = "Pace by class") -> go.Figure:
     frame = frame.dropna(subset=["LapTime"])
     for klass in sorted(frame["Class"].dropna().unique()):
         rows = frame[frame["Class"] == klass]
-        fig.add_box(
-            y=_EPOCH + rows["LapTime"],
-            name=str(klass),
-            marker_color=get_class_color(str(klass)),
-            boxmean=True,
-        )
+        color = get_class_color(str(klass))
+        if kind == "violin":
+            fig.add_violin(
+                y=_EPOCH + rows["LapTime"],
+                name=str(klass),
+                line_color=color,
+                meanline_visible=True,
+            )
+        else:
+            fig.add_box(y=_EPOCH + rows["LapTime"], name=str(klass), marker_color=color)
     fig.update_layout(xaxis_title="Class", yaxis_title="Lap time", showlegend=False)
     fig.update_yaxes(tickformat="%M:%S.%L")
     return fig
@@ -393,4 +406,159 @@ def add_track_status(fig: go.Figure, source: Any) -> go.Figure:
             annotation_text=label,
             annotation_position="top left",
         )
+    return fig
+
+
+def plot_fastest_laps(source: Any, *, title: str = "Fastest lap per car") -> go.Figure:
+    """Each car's best lap as a bar — the delta to the overall best, by class.
+
+    Bars show how far off the quickest lap each car was (the quickest sits at the
+    top with a zero-length bar); the hover gives the absolute lap time. Coloured
+    by class.
+    """
+    go = _import_go()
+    fig = go.Figure(layout={"title": title})
+    frame = _laps_frame(source)
+    if frame.empty or "LapTime" not in frame:
+        return fig
+    frame = frame.dropna(subset=["LapTime"])
+    if frame.empty:
+        return fig
+
+    best = (
+        frame.groupby("CarNumber")
+        .agg(best=("LapTime", "min"), klass=("Class", "last"))
+        .reset_index()
+        .sort_values("best")
+    )
+    overall = best["best"].min()
+    best["_delta"] = (best["best"] - overall).dt.total_seconds()
+    best["_abs"] = best["best"].map(format_timedelta)
+    cars = best["CarNumber"].tolist()
+
+    for klass, rows in best.groupby("klass", sort=True):
+        fig.add_bar(
+            y=rows["CarNumber"],
+            x=rows["_delta"],
+            orientation="h",
+            name=str(klass),
+            legendgroup=str(klass),
+            marker_color=get_class_color(str(klass)),
+            customdata=rows["_abs"],
+            hovertemplate=(
+                "Car %{y} · %{fullData.name}<br>%{customdata} "
+                "(+%{x:.3f}s)<extra></extra>"
+            ),
+        )
+    fig.update_layout(
+        xaxis_title="Gap to overall best (s)", yaxis_title="Car", legend_title="Class"
+    )
+    fig.update_yaxes(categoryorder="array", categoryarray=cars, autorange="reversed")
+    return fig
+
+
+def plot_stint_pace(
+    source: Any, *, car: str | None = None, title: str | None = None
+) -> go.Figure:
+    """Lap time vs lap-in-stint, one line per stint — the degradation view.
+
+    A line per ``(car, stint)`` against the lap number *within* the stint, so
+    tyre/fuel degradation and out-laps are visible. Pass ``car`` to focus on a
+    single car; otherwise the whole field is drawn (toggle classes in the legend).
+    The y-axis reads ``M:SS.mmm``.
+    """
+    go = _import_go()
+    title = title or (f"Stint pace — car {car}" if car else "Stint pace")
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=["LapTime", "Stint"])
+    if car is not None:
+        frame = frame[frame["CarNumber"].astype(str) == str(car)]
+    if frame.empty:
+        return fig
+    frame = frame.copy()
+    frame["_lis"] = (
+        frame["LapNumber"]
+        - frame.groupby(["CarNumber", "Stint"])["LapNumber"].transform("min")
+        + 1
+    ).astype(int)
+    frame["_clock"] = _EPOCH + frame["LapTime"]
+
+    seen: set[str] = set()
+    for (this_car, stint), g in frame.groupby(["CarNumber", "Stint"], sort=True):
+        klass = str(g["Class"].iloc[-1])
+        style = get_car_style(str(this_car), klass)
+        fig.add_scatter(
+            x=g["_lis"],
+            y=g["_clock"],
+            mode="lines+markers",
+            name=f"#{this_car} stint {int(stint)}",
+            legendgroup=klass,
+            legendgrouptitle_text=None if klass in seen else klass,
+            line={"color": style["color"], "dash": style["dash"]},
+            marker={"color": style["color"], "symbol": style["symbol"], "size": 6},
+            hovertemplate=(
+                "#%{fullData.name}<br>lap-in-stint %{x} · %{y|%M:%S.%L}<extra></extra>"
+            ),
+        )
+        seen.add(klass)
+    fig.update_layout(
+        xaxis_title="Lap in stint", yaxis_title="Lap time", legend_title="Class"
+    )
+    fig.update_xaxes(dtick=1)
+    fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_driver_comparison(
+    source: Any, car: str, *, kind: str = "box", title: str | None = None
+) -> go.Figure:
+    """Lap-time distribution per driver within one car's crew.
+
+    ``kind`` is ``"box"`` (default) or ``"violin"``. The y-axis reads
+    ``M:SS.mmm``.
+    """
+    go = _import_go()
+    title = title or f"Car {car} — pace by driver"
+    fig = go.Figure(layout={"title": title})
+    frame = _laps_frame(source)
+    if frame.empty or "LapTime" not in frame:
+        return fig
+    frame = frame[frame["CarNumber"].astype(str) == str(car)].dropna(
+        subset=["LapTime", "Driver"]
+    )
+    if frame.empty:
+        return fig
+    color = get_class_color(str(frame["Class"].iloc[-1]))
+    for driver in dict.fromkeys(frame["Driver"].astype(str)):
+        laptimes = _EPOCH + frame.loc[frame["Driver"] == driver, "LapTime"]
+        if kind == "violin":
+            fig.add_violin(y=laptimes, name=driver, line_color=color)
+        else:
+            fig.add_box(y=laptimes, name=driver, marker_color=color)
+    fig.update_layout(xaxis_title="Driver", yaxis_title="Lap time", showlegend=False)
+    fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_top_speeds(source: Any, *, title: str = "Top speed by class") -> go.Figure:
+    """Top-speed (km/h) distribution as one box per class."""
+    go = _import_go()
+    fig = go.Figure(layout={"title": title})
+    frame = _laps_frame(source)
+    if frame.empty or "SpeedST" not in frame:
+        return fig
+    frame = frame.dropna(subset=["SpeedST"])
+    if frame.empty:
+        return fig
+    for klass in sorted(frame["Class"].dropna().unique()):
+        rows = frame[frame["Class"] == klass]
+        fig.add_box(
+            y=rows["SpeedST"], name=str(klass), marker_color=get_class_color(str(klass))
+        )
+    fig.update_layout(
+        xaxis_title="Class", yaxis_title="Top speed (km/h)", showlegend=False
+    )
     return fig
