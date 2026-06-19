@@ -10,10 +10,11 @@ derived here:
 * ``Position`` and ``PositionInClass`` (reconstructed from line crossings)
 * ``GapToLeader`` / ``GapToLeaderInClass`` (elapsed-time delta to the leader at
   equal lap count, overall and within the class)
+* ``Hour`` (time of day, from the CSV ``HOUR`` column, in decimal hours)
 * ``IsPersonalBest``, ``IsAccurate`` and ``DriverChange``
 
-``Hour`` and ``LapStartDate`` need session-level context and are left empty here;
-they are filled in a later step.
+``LapStartDate`` needs the session's calendar date and is left empty here; it is
+filled in a later step.
 
 See ``docs/analyse_fastf1.md`` §14.4 for the verified CSV format.
 """
@@ -84,6 +85,8 @@ def to_laps(raw: pd.DataFrame, *, session: Session | None = None) -> Laps:
     df["Sector2Time"] = sector(2)
     df["Sector3Time"] = sector(3)
     df["Time"] = duration("ELAPSED")
+    # Time of day (the CSV HOUR column) as decimal hours -> enables day/night.
+    df["Hour"] = duration("HOUR").dt.total_seconds() / 3600.0
     df["SpeedST"] = number("TOP_SPEED").astype("float64")
     df["LapAvgSpeed"] = number("KPH").astype("float64")
     df["TrackStatus"] = text("FLAG_AT_FL")

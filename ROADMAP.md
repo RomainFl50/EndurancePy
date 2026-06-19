@@ -138,9 +138,9 @@ its keep for analysts.
 - **Gap / interval engine** — ✅ `lead_changes()` (leadership periods) and
   ✅ `battles()` (cars nose-to-tail within Xs for N laps). Still to come: real
   on-track intervals (not just lap-aligned) and time lost in traffic.
-- **Session context fill** — populate `Hour` / `LapStartDate`, enabling a real
-  time axis and day/night shading on the charts. Also the deferred session
-  `Duration` / `EndTime` for non-races (from the lap data).
+- **Session context fill** — ✅ `Hour` (time of day) is now populated from the CSV.
+  Still to come: `LapStartDate` (needs the session date), day/night shading on the
+  charts, and the deferred session `Duration` / `EndTime` for non-races.
 
 ### 0.5.0 — Season & championship
 
