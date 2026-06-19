@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     laps, time in car, best/median lap and consistency (lap-time std-dev).
   - `endurancepy.lead_changes(session|laps, in_class=False)` — leadership periods
     (who led, which laps, how long); the transitions are the lead changes.
+  - `endurancepy.battles(session|laps, within=, min_laps=, in_class=)` — on-track
+    battles: pairs of cars running within a gap for several consecutive laps
+    (robust to position swaps), with the lap span and closest/mean gap.
   - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
     in the pits), coloured by class.
 

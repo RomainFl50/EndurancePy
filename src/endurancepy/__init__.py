@@ -37,6 +37,7 @@ from endurancepy.events import (
 from endurancepy.logger import enable_console_logging, set_log_level
 from endurancepy.standings import Standings, compute_standings
 from endurancepy.strategy import (
+    battles,
     driver_summary,
     lead_changes,
     pit_stops,
@@ -56,6 +57,7 @@ __all__ = [
     "Series",
     "Standings",
     "__version__",
+    "battles",
     "compute_standings",
     "driver_summary",
     "enable_console_logging",

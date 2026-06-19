@@ -105,8 +105,43 @@ def test_lead_changes_in_class() -> None:
     assert list(leads[leads["Class"] == "HYPERCAR"]["Leader"]) == ["7", "8"]
 
 
+def test_battles_none_in_fixture() -> None:
+    # car 7 pits early, so nobody runs nose-to-tail for 3+ laps
+    assert ep.battles(_laps()).empty
+
+
+def test_battles_detected() -> None:
+    # cars 1 & 2 stay within a second of each other for three straight laps
+    df = pd.DataFrame(
+        {
+            "CarNumber": ["1", "2", "1", "2", "1", "2"],
+            "Class": ["LMP2"] * 6,
+            "LapNumber": [1.0, 1.0, 2.0, 2.0, 3.0, 3.0],
+            "Time": pd.to_timedelta(
+                [
+                    "0:01:40",
+                    "0:01:40.5",
+                    "0:03:20",
+                    "0:03:20.4",
+                    "0:05:00",
+                    "0:05:00.3",
+                ]
+            ),
+        }
+    )
+    fight = ep.battles(df, within="1s", min_laps=3)
+    assert len(fight) == 1
+    row = fight.iloc[0]
+    assert {row["CarA"], row["CarB"]} == {"1", "2"}
+    assert row["FromLap"] == 1 and row["ToLap"] == 3 and row["Laps"] == 3
+    assert row["MinGap"] == pd.Timedelta(seconds=0.3)
+    # a tighter threshold / longer requirement finds nothing
+    assert ep.battles(df, within="0.1s", min_laps=3).empty
+
+
 def test_summaries_empty_laps() -> None:
     empty = _laps().iloc[0:0]
     assert ep.stint_summary(empty).empty
     assert ep.driver_summary(empty).empty
     assert ep.lead_changes(empty).empty
+    assert ep.battles(empty).empty

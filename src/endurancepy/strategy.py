@@ -15,7 +15,7 @@ import pandas as pd
 if TYPE_CHECKING:
     from endurancepy.core import Laps, Session
 
-__all__ = ["driver_summary", "lead_changes", "pit_stops", "stint_summary"]
+__all__ = ["battles", "driver_summary", "lead_changes", "pit_stops", "stint_summary"]
 
 #: Columns (and dtypes) of the pit-stop table returned by :func:`pit_stops`.
 _PIT_STOP_DTYPES: dict[str, str] = {
@@ -63,6 +63,23 @@ _LEAD_DTYPES: dict[str, str] = {
     "ToLap": "Int64",
     "Laps": "Int64",
 }
+
+#: Columns (and dtypes) of the battle table returned by :func:`battles`.
+_BATTLE_DTYPES: dict[str, str] = {
+    "Class": "string",
+    "CarA": "string",
+    "CarB": "string",
+    "FromLap": "Int64",
+    "ToLap": "Int64",
+    "Laps": "Int64",
+    "MinGap": "timedelta64[ns]",
+    "MeanGap": "timedelta64[ns]",
+}
+
+
+def _car_key(car: str) -> tuple[int, Any]:
+    text = str(car)
+    return (0, int(text)) if text.isdigit() else (1, text)
 
 
 def _empty(dtypes: dict[str, str]) -> pd.DataFrame:
@@ -240,3 +257,72 @@ def lead_changes(
                 start = i
     table = pd.DataFrame(rows).astype(_LEAD_DTYPES)
     return table.sort_values(["FromLap", "Class"]).reset_index(drop=True)
+
+
+def battles(
+    source: Laps | Session | pd.DataFrame,
+    *,
+    within: str = "1s",
+    min_laps: int = 3,
+    in_class: bool = True,
+) -> pd.DataFrame:
+    """Find on-track battles — pairs of cars running nose-to-tail.
+
+    Two cars are "battling" while they are **adjacent in the order** (consecutive
+    on elapsed time at equal lap count) and within ``within`` of each other for at
+    least ``min_laps`` consecutive laps — regardless of who is ahead, so a
+    position swap doesn't end the fight. With ``in_class=True`` the order is taken
+    within each class. Returns one row per battle (the pair, lap span, and the
+    closest / mean gap), ordered by first lap.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or not {"LapNumber", "Time", "CarNumber"} <= set(frame.columns):
+        return _empty(_BATTLE_DTYPES)
+    threshold = pd.Timedelta(within)
+    work = frame.dropna(subset=["LapNumber", "Time"])
+    keys = ["LapNumber", "Class"] if in_class else ["LapNumber"]
+    if in_class and "Class" not in work:
+        return _empty(_BATTLE_DTYPES)
+
+    # Per lap (and class), record adjacent pairs whose gap is within the threshold.
+    seen: dict[tuple[Any, str, str], list[tuple[float, pd.Timedelta]]] = {}
+    for key, group in work.groupby(keys, sort=True):
+        lap = key[0] if isinstance(key, tuple) else key
+        klass = key[1] if (in_class and isinstance(key, tuple)) else pd.NA
+        ordered = group.sort_values("Time")
+        cars = ordered["CarNumber"].tolist()
+        times = ordered["Time"].tolist()
+        for i in range(len(cars) - 1):
+            gap = times[i + 1] - times[i]
+            if gap <= threshold:
+                pair = tuple(sorted([cars[i], cars[i + 1]], key=_car_key))
+                seen.setdefault((klass, pair[0], pair[1]), []).append((float(lap), gap))
+
+    rows = []
+    for (klass, car_a, car_b), entries in seen.items():
+        entries.sort(key=lambda item: item[0])
+        laps = [lap for lap, _ in entries]
+        gaps = [gap for _, gap in entries]
+        start = 0
+        for i in range(1, len(laps) + 1):
+            if i == len(laps) or laps[i] != laps[i - 1] + 1:
+                run = slice(start, i)
+                if i - start >= min_laps:
+                    run_gaps = gaps[run]
+                    rows.append(
+                        {
+                            "Class": klass,
+                            "CarA": car_a,
+                            "CarB": car_b,
+                            "FromLap": laps[start],
+                            "ToLap": laps[i - 1],
+                            "Laps": i - start,
+                            "MinGap": min(run_gaps),
+                            "MeanGap": sum(run_gaps, pd.Timedelta(0)) / len(run_gaps),
+                        }
+                    )
+                start = i
+    if not rows:
+        return _empty(_BATTLE_DTYPES)
+    table = pd.DataFrame(rows).astype(_BATTLE_DTYPES)
+    return table.sort_values(["FromLap", "Class", "CarA"]).reset_index(drop=True)
