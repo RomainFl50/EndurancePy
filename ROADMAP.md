@@ -135,9 +135,10 @@ its keep for analysts.
   estimates.
 - **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
   pace and consistency. Still to come: day vs night running, best/worst stint.
-- **Gap / interval engine** — real on-track intervals (not just lap-aligned),
-  time lost in traffic, **battle detection** (cars within Xs for N laps), lead
-  changes and laps-in-the-lead per car/class.
+- **Gap / interval engine** — ✅ `lead_changes()` gives the leadership periods
+  (overall / per class). Still to come: real on-track intervals (not just
+  lap-aligned), time lost in traffic, and **battle detection** (cars within Xs for
+  N laps).
 - **Session context fill** — populate `Hour` / `LapStartDate`, enabling a real
   time axis and day/night shading on the charts. Also the deferred session
   `Duration` / `EndTime` for non-races (from the lap data).

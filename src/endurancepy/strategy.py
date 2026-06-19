@@ -15,7 +15,7 @@ import pandas as pd
 if TYPE_CHECKING:
     from endurancepy.core import Laps, Session
 
-__all__ = ["driver_summary", "pit_stops", "stint_summary"]
+__all__ = ["driver_summary", "lead_changes", "pit_stops", "stint_summary"]
 
 #: Columns (and dtypes) of the pit-stop table returned by :func:`pit_stops`.
 _PIT_STOP_DTYPES: dict[str, str] = {
@@ -52,6 +52,16 @@ _DRIVER_DTYPES: dict[str, str] = {
     "BestLap": "timedelta64[ns]",
     "MedianLap": "timedelta64[ns]",
     "Consistency": "float64",  # std-dev of clean lap times, in seconds
+}
+
+
+#: Columns (and dtypes) of the lead table returned by :func:`lead_changes`.
+_LEAD_DTYPES: dict[str, str] = {
+    "Class": "string",
+    "Leader": "string",
+    "FromLap": "Int64",
+    "ToLap": "Int64",
+    "Laps": "Int64",
 }
 
 
@@ -188,3 +198,45 @@ def driver_summary(source: Laps | Session | pd.DataFrame) -> pd.DataFrame:
         )
     table = pd.DataFrame(rows).astype(_DRIVER_DTYPES)
     return table.sort_values(["CarNumber", "Driver"]).reset_index(drop=True)
+
+
+def lead_changes(
+    source: Laps | Session | pd.DataFrame, *, in_class: bool = False
+) -> pd.DataFrame:
+    """Leadership periods over the race — one row per stint in the lead.
+
+    Each row is a contiguous run of laps led by one car (``Leader``, ``FromLap``,
+    ``ToLap``, ``Laps``); the transitions between rows are the lead changes. With
+    ``in_class=True`` the lead is computed per class (``Class`` is set), otherwise
+    overall (``Class`` is ``<NA>``). Ordered by first lap.
+    """
+    frame = _laps_frame(source)
+    column = "PositionInClass" if in_class else "Position"
+    if frame.empty or column not in frame or "LapNumber" not in frame:
+        return _empty(_LEAD_DTYPES)
+
+    leaders = frame[frame[column] == 1].dropna(subset=["LapNumber"])
+    if leaders.empty:
+        return _empty(_LEAD_DTYPES)
+
+    groups = leaders.groupby("Class") if in_class else [(pd.NA, leaders)]
+    rows = []
+    for klass, group in groups:
+        group = group.sort_values("LapNumber")
+        cars = group["CarNumber"].tolist()
+        laps = group["LapNumber"].tolist()
+        start = 0
+        for i in range(1, len(cars) + 1):
+            if i == len(cars) or cars[i] != cars[start]:
+                rows.append(
+                    {
+                        "Class": klass,
+                        "Leader": cars[start],
+                        "FromLap": laps[start],
+                        "ToLap": laps[i - 1],
+                        "Laps": i - start,
+                    }
+                )
+                start = i
+    table = pd.DataFrame(rows).astype(_LEAD_DTYPES)
+    return table.sort_values(["FromLap", "Class"]).reset_index(drop=True)

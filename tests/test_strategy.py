@@ -86,7 +86,27 @@ def test_driver_summary() -> None:
     assert pd.isna(a["Consistency"])
 
 
+def test_lead_changes_overall() -> None:
+    leads = ep.lead_changes(_laps())
+    # car 7 leads lap 1, then car 8 takes over for laps 2-4 (one lead change)
+    assert list(leads["Leader"]) == ["7", "8"]
+    assert list(leads["FromLap"]) == [1, 2]
+    assert list(leads["ToLap"]) == [1, 4]
+    assert list(leads["Laps"]) == [1, 3]
+
+
+def test_lead_changes_in_class() -> None:
+    leads = ep.lead_changes(_laps(), in_class=True)
+    lmgt3 = leads[leads["Class"] == "LMGT3"]
+    assert len(lmgt3) == 1  # car 83 leads its class throughout
+    assert lmgt3.iloc[0]["Leader"] == "83"
+    assert lmgt3.iloc[0]["Laps"] == 3
+    # HYPERCAR still has the 7 -> 8 change
+    assert list(leads[leads["Class"] == "HYPERCAR"]["Leader"]) == ["7", "8"]
+
+
 def test_summaries_empty_laps() -> None:
     empty = _laps().iloc[0:0]
     assert ep.stint_summary(empty).empty
     assert ep.driver_summary(empty).empty
+    assert ep.lead_changes(empty).empty

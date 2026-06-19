@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     driver, lap span, best/median lap and a **degradation** slope (s/lap).
   - `endurancepy.driver_summary(session|laps)` — one row per `(car, driver)`:
     laps, time in car, best/median lap and consistency (lap-time std-dev).
+  - `endurancepy.lead_changes(session|laps, in_class=False)` — leadership periods
+    (who led, which laps, how long); the transitions are the lead changes.
   - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
     in the pits), coloured by class.
 
