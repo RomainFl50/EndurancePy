@@ -9,14 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Interactive plotting (0.3.0, in progress).** `plotting.plot_strategy(session)`
-  builds an interactive **stint/strategy chart** (Plotly): one horizontal bar per
-  stint, per car, coloured by class, with the gaps between a car's bars showing
-  its pit stops and the hover giving the stint's driver and lap range. Returns a
-  native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
-  extra (`pip install endurancepy[interactive]`). The `plotting` module is now a
-  package (`colors` / `style` / `charts`); all existing names are unchanged.
-  Example: [`examples/plot_strategy.py`](examples/plot_strategy.py).
+- **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
+  charts (zoom / hover / legend-toggle keep a large field readable). Each returns
+  a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
+  extra (`pip install endurancepy[interactive]`).
+  - `plotting.plot_strategy` — stint/strategy Gantt (one bar per stint per car;
+    gaps = pit stops; hover = driver + lap range).
+  - `plotting.plot_lap_evolution` — lap time vs lap, one line per car, `M:SS.mmm`
+    clock axis.
+  - `plotting.plot_pace` — lap-time distribution box per class.
+  - `plotting.plot_position_evolution` — position vs lap (overall or `in_class`).
+  - `plotting.plot_gap` — gap to the (class) leader over the laps.
+  - `plotting.plot_race_trace` — cumulative delta to a constant reference pace.
+  - `plotting.add_track_status(fig, source)` — shade FCY / safety-car / code-60 /
+    red-flag lap windows on any lap-axis chart.
+  - `plotting.get_car_style(car, class)` — class colour + a per-car dash/marker so
+    cars sharing a class colour stay distinguishable.
+- Per-lap **`GapToLeader` / `GapToLeaderInClass`** are now computed by the
+  Analysis parser (elapsed-time delta to the leader at equal lap count, overall
+  and within the class) — previously left empty. They underpin `plot_gap` and the
+  race trace.
+- The `plotting` module is now a package (`colors` / `style` / `charts`); every
+  existing name is re-exported unchanged. Examples:
+  [`plot_strategy.py`](examples/plot_strategy.py),
+  [`plot_race_trace.py`](examples/plot_race_trace.py).
 
 ### Planned
 

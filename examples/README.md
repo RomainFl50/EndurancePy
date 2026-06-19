@@ -14,6 +14,7 @@ no bundled data. Just run them.
 | [`plot_pace_by_class.py`](plot_pace_by_class.py) | Box plot of green-flag pace per class |
 | [`plot_lap_evolution.py`](plot_lap_evolution.py) | Lap-time evolution scatter, coloured by class |
 | [`plot_strategy.py`](plot_strategy.py) | Interactive stint/strategy chart (Plotly, HTML output) |
+| [`plot_race_trace.py`](plot_race_trace.py) | Interactive race trace + track-status overlay (Plotly, HTML) |
 
 ## Running
 
@@ -28,6 +29,7 @@ python examples/standings_example.py
 python examples/plot_pace_by_class.py
 python examples/plot_lap_evolution.py
 python examples/plot_strategy.py
+python examples/plot_race_trace.py
 ```
 
 Each example uses a known season id (e.g. `08_2018-2019`); edit the

@@ -17,12 +17,36 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from endurancepy.plotting.colors import get_class_color
+from endurancepy.plotting.colors import get_car_style, get_class_color
+from endurancepy.utils import format_timedelta
 
 if TYPE_CHECKING:
     import plotly.graph_objects as go
 
-__all__ = ["plot_strategy"]
+__all__ = [
+    "add_track_status",
+    "plot_gap",
+    "plot_lap_evolution",
+    "plot_pace",
+    "plot_position_evolution",
+    "plot_race_trace",
+    "plot_strategy",
+]
+
+#: Anchor a timedelta onto a clock so a Plotly date axis renders M:SS.mmm ticks.
+_EPOCH = pd.Timestamp(0)
+
+#: Non-green field states worth shading on a chart, with a colour and label.
+_NEUTRAL_STATUS: dict[str, tuple[str, str]] = {
+    "FCY": ("#F1C40F", "Full-course yellow"),
+    "SC": ("#E67E22", "Safety car"),
+    "C60": ("#F39C12", "Code 60"),
+    "CODE60": ("#F39C12", "Code 60"),
+    "SF": ("#F1C40F", "Slow zone"),
+    "YEL": ("#F1C40F", "Yellow"),
+    "RED": ("#E74C3C", "Red flag"),
+    "FF": ("#9B59B6", "Chequered"),
+}
 
 
 def _import_go() -> Any:
@@ -132,4 +156,241 @@ def plot_strategy(source: Any, *, title: str = "Race strategy") -> go.Figure:
     )
     fig.update_xaxes(rangemode="tozero")
     fig.update_yaxes(categoryorder="array", categoryarray=cars, autorange="reversed")
+    return fig
+
+
+def _prep(source: Any) -> pd.DataFrame:
+    """Laps as a frame, sorted per car/lap (drops laps with no lap number)."""
+    frame = _laps_frame(source)
+    if frame.empty or "LapNumber" not in frame:
+        return pd.DataFrame()
+    return frame.dropna(subset=["LapNumber"]).sort_values(["CarNumber", "LapNumber"])
+
+
+def _car_lines(
+    fig: Any,
+    frame: pd.DataFrame,
+    ycol: str,
+    *,
+    mode: str,
+    hovertemplate: str,
+    customcols: tuple[str, ...] = (),
+) -> None:
+    """Add one line per car (colour by class, dash/marker by car), legend by class."""
+    seen: set[str] = set()
+    for car, g in frame.groupby("CarNumber", sort=True):
+        klass = str(g["Class"].iloc[-1])
+        style = get_car_style(str(car), klass)
+        fig.add_scatter(
+            x=g["LapNumber"],
+            y=g[ycol],
+            mode=mode,
+            name=str(car),
+            legendgroup=klass,
+            legendgrouptitle_text=None if klass in seen else klass,
+            line={"color": style["color"], "dash": style["dash"]},
+            marker={"color": style["color"], "symbol": style["symbol"], "size": 6},
+            customdata=g[list(customcols)].to_numpy() if customcols else None,
+            hovertemplate=hovertemplate,
+        )
+        seen.add(klass)
+
+
+def plot_lap_evolution(source: Any, *, title: str = "Lap-time evolution") -> go.Figure:
+    """Lap time vs lap number, one line per car (colour by class).
+
+    The y-axis is a clock (ticks read ``M:SS.mmm``). ``source`` is a Session or
+    Laps. Returns a :class:`plotly.graph_objects.Figure`.
+    """
+    go = _import_go()
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=["LapTime"]).copy()
+    frame["_clock"] = _EPOCH + frame["LapTime"]
+    frame["_lap"] = frame["LapNumber"].astype(int)
+    frame["_drv"] = frame["Driver"].fillna("")
+    _car_lines(
+        fig,
+        frame,
+        "_clock",
+        mode="lines+markers",
+        customcols=("_lap", "_drv"),
+        hovertemplate=(
+            "Car %{fullData.name}<br>Lap %{customdata[0]} · %{y|%M:%S.%L}<br>"
+            "%{customdata[1]}<extra></extra>"
+        ),
+    )
+    fig.update_layout(xaxis_title="Lap", yaxis_title="Lap time", legend_title="Class")
+    fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_pace(source: Any, *, title: str = "Pace by class") -> go.Figure:
+    """Lap-time distribution as one box per class (y-axis reads ``M:SS.mmm``)."""
+    go = _import_go()
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=["LapTime"])
+    for klass in sorted(frame["Class"].dropna().unique()):
+        rows = frame[frame["Class"] == klass]
+        fig.add_box(
+            y=_EPOCH + rows["LapTime"],
+            name=str(klass),
+            marker_color=get_class_color(str(klass)),
+            boxmean=True,
+        )
+    fig.update_layout(xaxis_title="Class", yaxis_title="Lap time", showlegend=False)
+    fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_position_evolution(
+    source: Any, *, in_class: bool = False, title: str | None = None
+) -> go.Figure:
+    """Position vs lap number, one line per car (P1 at the top)."""
+    go = _import_go()
+    column = "PositionInClass" if in_class else "Position"
+    title = title or ("Class position" if in_class else "Overall position")
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=[column]).copy()
+    frame["_pos"] = frame[column].astype(int)
+    frame["_lap"] = frame["LapNumber"].astype(int)
+    _car_lines(
+        fig,
+        frame,
+        "_pos",
+        mode="lines+markers",
+        customcols=("_lap",),
+        hovertemplate=(
+            "Car %{fullData.name}<br>Lap %{customdata[0]} · P%{y}<extra></extra>"
+        ),
+    )
+    fig.update_layout(xaxis_title="Lap", yaxis_title="Position", legend_title="Class")
+    fig.update_yaxes(autorange="reversed", dtick=1)
+    return fig
+
+
+def plot_gap(
+    source: Any, *, in_class: bool = False, title: str | None = None
+) -> go.Figure:
+    """Gap to the (class) leader in seconds vs lap number, one line per car."""
+    go = _import_go()
+    column = "GapToLeaderInClass" if in_class else "GapToLeader"
+    title = title or ("Gap to class leader" if in_class else "Gap to leader")
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=[column]).copy()
+    frame["_gap"] = frame[column].dt.total_seconds()
+    frame["_lap"] = frame["LapNumber"].astype(int)
+    _car_lines(
+        fig,
+        frame,
+        "_gap",
+        mode="lines",
+        customcols=("_lap",),
+        hovertemplate=(
+            "Car %{fullData.name}<br>Lap %{customdata[0]} · +%{y:.1f}s<extra></extra>"
+        ),
+    )
+    fig.update_layout(xaxis_title="Lap", yaxis_title="Gap (s)", legend_title="Class")
+    fig.update_yaxes(autorange="reversed")  # leader (0) on top, behind goes down
+    return fig
+
+
+def plot_race_trace(source: Any, *, title: str = "Race trace") -> go.Figure:
+    """Cumulative delta to a constant reference pace, one line per car.
+
+    The reference is the field's median lap time; the y value is
+    ``lap × reference − elapsed`` (seconds), so a rising line is gaining on the
+    reference pace and a falling line is losing — isolating pace from the leader's
+    own drift.
+    """
+    go = _import_go()
+    fig = go.Figure(layout={"title": title})
+    frame = _prep(source)
+    if frame.empty:
+        return fig
+    frame = frame.dropna(subset=["Time", "LapTime"]).copy()
+    reference = frame["LapTime"].median()
+    ref_seconds = reference.total_seconds()
+    frame["_trace"] = (
+        frame["LapNumber"] * ref_seconds - frame["Time"].dt.total_seconds()
+    )
+    frame["_lap"] = frame["LapNumber"].astype(int)
+    _car_lines(
+        fig,
+        frame,
+        "_trace",
+        mode="lines",
+        customcols=("_lap",),
+        hovertemplate=(
+            "Car %{fullData.name}<br>Lap %{customdata[0]} · Δ%{y:.1f}s<extra></extra>"
+        ),
+    )
+    fig.update_layout(
+        xaxis_title="Lap",
+        yaxis_title=f"Δ to {format_timedelta(reference)} ref pace (s)",
+        legend_title="Class",
+    )
+    return fig
+
+
+def add_track_status(fig: go.Figure, source: Any) -> go.Figure:
+    """Shade the lap windows where the field ran under a neutralisation.
+
+    Reads the per-lap ``TrackStatus`` (the field's most common flag each lap) and
+    adds a coloured band for each contiguous run of FCY / safety car / code 60 /
+    red flag, on the lap (x) axis. A no-op when no flags are present (e.g. older
+    seasons). Returns ``fig`` for chaining.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or "TrackStatus" not in frame:
+        return fig
+    flags = frame.dropna(subset=["LapNumber", "TrackStatus"])
+    if flags.empty:
+        return fig
+
+    def _mode(values: pd.Series) -> Any:
+        common = values.mode()
+        return common.iloc[0] if len(common) else None
+
+    status = flags.groupby("LapNumber")["TrackStatus"].agg(_mode)
+    runs: list[tuple[float, float, str]] = []
+    current: tuple[float, float, str] | None = None
+    for lap, raw in status.items():
+        code = str(raw).strip().upper()
+        if code in _NEUTRAL_STATUS:
+            if current and current[2] == code:
+                current = (current[0], float(lap), code)
+            else:
+                if current:
+                    runs.append(current)
+                current = (float(lap), float(lap), code)
+        elif current:
+            runs.append(current)
+            current = None
+    if current:
+        runs.append(current)
+
+    for start, end, code in runs:
+        color, label = _NEUTRAL_STATUS[code]
+        fig.add_vrect(
+            x0=start - 0.5,
+            x1=end + 0.5,
+            fillcolor=color,
+            opacity=0.15,
+            line_width=0,
+            layer="below",
+            annotation_text=label,
+            annotation_position="top left",
+        )
     return fig

@@ -28,48 +28,47 @@ hand-built. 0.3.0 turns plotting into a first-class, endurance-aware feature.
 
 Reusable functions that return the native figure (a `plotly.Figure` on the
 interactive path, or matplotlib `(fig, ax)` on the static path) — composable,
-never showing/blocking internally:
+never showing/blocking internally. (✅ = shipped.)
 
-- **`plot_strategy(session)`** — Gantt of the stints: one horizontal bar per car,
-  segmented by stint, marking pit stops and driver changes. *The* endurance plot.
-  (`Stint`, `PitInTime`/`PitOutTime`, `DriverChange` already exist.)
-- **`plot_race_trace(session)`** — cumulative delta of each car vs a reference
+- ✅ **`plot_strategy(session)`** — Gantt of the stints: one horizontal bar per
+  car, segmented by stint, the gaps being pit stops. *The* endurance plot.
+- ✅ **`plot_race_trace(session)`** — cumulative delta of each car vs a reference
   pace ("race trace"): exposes position battles and the cost of neutralisations.
-- **`plot_position_evolution(session)`** — position lap-by-lap, overall and per
-  class.
-- **`plot_gap(session)`** — gap to the (class) leader over time.
-- **`plot_pace(session)`** / **`plot_lap_evolution(session)`** — box/violin pace
-  per class and the evolution scatter (promote the two example charts to the API).
+- ✅ **`plot_position_evolution(session)`** — position lap-by-lap, overall and per
+  class (`in_class=`).
+- ✅ **`plot_gap(session)`** — gap to the (class) leader over the laps.
+- ✅ **`plot_pace(session)`** / ✅ **`plot_lap_evolution(session)`** — pace box per
+  class and the per-car evolution lines.
 - **`plot_driver_comparison(car)`** — pace distribution per driver within a crew.
+- Mark pit stops / driver changes explicitly on `plot_strategy`; add violin to
+  `plot_pace`.
 
 ### Colour & style system
 
+- ✅ **`get_car_style()`** — a class colour **plus** a per-car dash/marker, so the
+  cars sharing one class colour stay distinguishable.
+- ✅ **De-duplicated legend** — charts group traces by class (one legend header per
+  class), so the `seen: set` copy-paste is gone.
 - **`get_team_color` + a team registry** (today only class + manufacturer; FastF1
   has team colours).
-- **`get_car_style()`** — a class/manufacturer colour **plus** a linestyle/marker,
-  so the several cars sharing one class colour stay distinguishable (and readable
-  in black & white). Needed the moment a whole class is plotted.
-- **De-duplicated legend** helper (the `seen: set` pattern is copy-pasted in every
-  example today).
 - **Per-series palettes** (IMSA GTP/GTD vs WEC Hypercar/LMGT3) and wider coverage.
 
 ### Axes & theming
 
-- **Lap-time axis & hover formatting** — durations rendered via the existing
-  `format_timedelta`: as Plotly tick text + `hovertemplate` on the interactive
-  path, and a small `matplotlib.ticker` Formatter on the seaborn path, so times
-  read `1:58.0`, not seconds. (Timple is the matplotlib-only alternative; see the
-  library notes below.)
-- **Track-status overlay** — shade FCY / SC / red-flag windows on any time-axis
-  plot. High value given how long endurance races are.
+- ✅ **Lap-time axis & hover formatting** — lap-time charts use a clock axis
+  (`M:SS.mmm`) and hovers render durations via `format_timedelta`. (A
+  `matplotlib.ticker` Formatter for the seaborn path is still to do; Timple is the
+  matplotlib-only alternative — see the library notes below.)
+- ✅ **Track-status overlay** — `add_track_status(fig, source)` shades FCY / safety
+  car / code 60 / red-flag lap windows on any lap-axis chart.
 - **Light/dark theme** and a richer `setup_mpl(theme=...)` (fonts, rcParams).
+- **Seaborn static path** (`plot_pace` as violin/box, publication styling).
 
 ### Data prerequisites (done *with* the plotting)
 
-Some charts need columns that are in the schema but not yet populated:
-
-- **Per-lap `Position` / `PositionInClass` and `GapToLeader(InClass)`** — required
-  for the trace / gap / position charts (currently "filled later").
+- ✅ **Per-lap `GapToLeader` / `GapToLeaderInClass`** computed in the Analysis
+  parser (`Position` / `PositionInClass` were already derived). These underpin the
+  gap, position and trace charts.
 - **`Hour`** (and the session `Duration`/end time we deferred) for time axes.
 
 ---

@@ -9,11 +9,16 @@ from __future__ import annotations
 
 __all__ = [
     "DEFAULT_COLOR",
+    "get_car_style",
     "get_class_color",
     "get_manufacturer_color",
     "list_classes",
     "list_manufacturers",
 ]
+
+#: Line dashes / marker symbols cycled to tell apart cars sharing a class colour.
+_DASHES = ("solid", "dash", "dot", "dashdot")
+_SYMBOLS = ("circle", "square", "diamond", "triangle-up", "x", "star", "hexagon")
 
 #: Fallback colour for unknown classes/manufacturers.
 DEFAULT_COLOR = "#777777"
@@ -78,3 +83,21 @@ def list_classes() -> list[str]:
 def list_manufacturers() -> list[str]:
     """Return the known manufacturer names."""
     return list(MANUFACTURER_COLORS)
+
+
+def get_car_style(car: str, class_name: str | None = None) -> dict[str, str]:
+    """Return a per-car plotting style: ``{"color", "dash", "symbol"}``.
+
+    The colour comes from the car's class (so a class reads as one colour); the
+    dash and marker symbol are cycled deterministically from the car number, so
+    the several cars sharing a class colour stay distinguishable (and readable in
+    black & white). Stable across calls and runs.
+    """
+    color = get_class_color(class_name) if class_name is not None else DEFAULT_COLOR
+    text = str(car)
+    key = int(text) if text.isdigit() else abs(hash(text))
+    return {
+        "color": color,
+        "dash": _DASHES[key % len(_DASHES)],
+        "symbol": _SYMBOLS[key % len(_SYMBOLS)],
+    }

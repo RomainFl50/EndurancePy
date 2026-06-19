@@ -76,3 +76,48 @@ def test_plot_strategy_empty_laps() -> None:
     laps = read_analysis(FIXTURE).iloc[0:0]
     fig = plotting.plot_strategy(laps)
     assert len(fig.data) == 0  # no bars, but a valid (empty) figure
+
+
+def test_get_car_style_is_deterministic_and_class_coloured() -> None:
+    a = plotting.get_car_style("7", "HYPERCAR")
+    assert a == plotting.get_car_style("7", "HYPERCAR")  # stable
+    assert a["color"] == plotting.get_class_color("HYPERCAR")
+    # cars sharing a class colour get a different dash/marker
+    b = plotting.get_car_style("8", "HYPERCAR")
+    assert a["color"] == b["color"]
+    assert (a["dash"], a["symbol"]) != (b["dash"], b["symbol"])
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "plot_lap_evolution",
+        "plot_position_evolution",
+        "plot_gap",
+        "plot_race_trace",
+    ],
+)
+def test_line_charts_one_trace_per_car(name: str) -> None:
+    go = pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE)
+    fig = getattr(plotting, name)(laps)
+    assert isinstance(fig, go.Figure)
+    assert len(fig.data) == 3  # cars 7, 8, 83
+
+
+def test_plot_pace_one_box_per_class() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    fig = plotting.plot_pace(read_analysis(FIXTURE))
+    assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
+
+
+def test_add_track_status_shades_field_neutralisations() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE)
+    # No field-wide neutralisation in the fixture -> no bands.
+    plain = plotting.add_track_status(plotting.plot_gap(laps), laps)
+    assert len(plain.layout.shapes) == 0
+    # Make lap 2 a full-field FCY -> one shaded band.
+    laps.loc[laps["LapNumber"] == 2, "TrackStatus"] = "FCY"
+    shaded = plotting.add_track_status(plotting.plot_gap(laps), laps)
+    assert len(shaded.layout.shapes) == 1

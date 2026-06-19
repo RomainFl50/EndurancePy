@@ -111,3 +111,9 @@ def test_plot_strategy(session: Session, tmp_path: Path) -> None:
     pytest.importorskip("plotly")
     output = _load("plot_strategy").plot(session, tmp_path / "strategy.html")
     assert output.exists() and output.stat().st_size > 0
+
+
+def test_plot_race_trace(session: Session, tmp_path: Path) -> None:
+    pytest.importorskip("plotly")
+    output = _load("plot_race_trace").plot(session, tmp_path / "trace.html")
+    assert output.exists() and output.stat().st_size > 0

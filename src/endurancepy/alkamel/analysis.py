@@ -8,10 +8,12 @@ derived here:
 * ``Stint`` (segment between pit stops) and ``PitInTime`` / ``PitOutTime``
 * ``LapStartTime`` and the cumulative ``SectorNSessionTime`` columns
 * ``Position`` and ``PositionInClass`` (reconstructed from line crossings)
+* ``GapToLeader`` / ``GapToLeaderInClass`` (elapsed-time delta to the leader at
+  equal lap count, overall and within the class)
 * ``IsPersonalBest``, ``IsAccurate`` and ``DriverChange``
 
-Gaps (``GapToLeader*``), ``Hour`` and ``LapStartDate`` need session-level
-context and are left empty here; they are filled in a later step.
+``Hour`` and ``LapStartDate`` need session-level context and are left empty here;
+they are filled in a later step.
 
 See ``docs/analyse_fastf1.md`` §14.4 for the verified CSV format.
 """
@@ -103,6 +105,7 @@ def to_laps(raw: pd.DataFrame, *, session: Session | None = None) -> Laps:
     _derive_sector_session_times(df)
     _derive_driver_change(df)
     _derive_positions(df)
+    _derive_gaps(df)
     _derive_accuracy(df)
 
     df = df.drop(columns=["_PitTime", "_Pitted"])
@@ -169,6 +172,19 @@ def _derive_positions(df: pd.DataFrame) -> None:
 
     df["Position"] = position
     df["PositionInClass"] = position_in_class
+
+
+def _derive_gaps(df: pd.DataFrame) -> None:
+    """Elapsed-time gap to the leader at equal lap count, overall and per class.
+
+    At each lap number the "leader" is the car with the smallest cumulative
+    ``Time`` for that many laps; the gap is this car's ``Time`` minus that
+    minimum (``0`` for the leader). The in-class variant compares within ``Class``.
+    """
+    leader = df.groupby("LapNumber")["Time"].transform("min")
+    df["GapToLeader"] = df["Time"] - leader
+    leader_in_class = df.groupby(["LapNumber", "Class"])["Time"].transform("min")
+    df["GapToLeaderInClass"] = df["Time"] - leader_in_class
 
 
 def _derive_accuracy(df: pd.DataFrame) -> None:
