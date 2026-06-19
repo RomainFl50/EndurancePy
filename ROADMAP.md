@@ -116,29 +116,69 @@ next to Plotly/seaborn.
 
 ---
 
-## Backlog (beyond 0.3.0)
+## Beyond 0.3.0 — future versions
 
-Not scheduled, roughly by value:
+Framed as a fan/analyst: the things that make you actually *understand* an
+endurance race. Versions are a direction, not a promise; each item notes when it
+depends on data we still need to verify.
 
-- **Session end time / accurate durations.** `get_sessions()` exposes a `Duration`
-  only for races (from the per-hour folders). True durations for practice/
-  qualifying need the lap data (last lap's `Time`); candidate for an opt-in
-  `get_sessions(exact=True)` or an `EndTime` column.
-- **Pit-stop analysis** (count, stationary time, pit loss). The raw `PIT_TIME` is
-  currently dropped and the stationary time is folded into the out-lap, so a
-  reliable pit-stop chart needs `PIT_TIME` kept on the laps first.
-- **Classification-CSV parser.** Results are currently reconstructed from the laps;
-  parse the real Classification CSV once its layout is fully verified (grid,
-  points, status straight from source).
-- **Wider series/season coverage & fixtures** — more verified formats across WEC /
-  ELMS / Asian Le Mans / Le Mans Cup / IMSA, including older archives.
-- **Standings** — richer, series-specific points/regulations on top of the generic
-  `compute_standings` (bonus/pole points, drop scores, Le Mans multipliers).
-- **Docs** — ✅ a [plotting gallery](docs/plotting.md) is in; still want a fuller
-  user guide and rendered chart screenshots.
+### 0.4.0 — Race-craft & strategy analysis
+
+The story of an endurance race *is* strategy — this is where the library earns
+its keep for analysts.
+
+- **Pit-stop analysis** — keep the raw `PIT_TIME` on the laps, then derive each
+  stop's stationary time, pit-lane loss, stop count, and **undercut / overcut**
+  detection. (Today the stationary time is folded into the out-lap, so this is
+  blocked on keeping `PIT_TIME`.)
+- **Stint & degradation** — fuel-corrected pace, a per-stint degradation slope and
+  tyre-life estimate, "best achievable" vs actual.
+- **Driver analysis** — per-driver pace (median + consistency), time in car, day
+  vs night running, best/worst stint; crew comparison across the whole race.
+- **Gap / interval engine** — real on-track intervals (not just lap-aligned),
+  time lost in traffic, **battle detection** (cars within Xs for N laps), lead
+  changes and laps-in-the-lead per car/class.
+- **Session context fill** — populate `Hour` / `LapStartDate`, enabling a real
+  time axis and day/night shading on the charts. Also the deferred session
+  `Duration` / `EndTime` for non-races (from the lap data).
+
+### 0.5.0 — Season & championship
+
+Zoom out from one race to the title fight.
+
+- **Series-specific points** on top of the generic `compute_standings` — WEC /
+  IMSA / ELMS systems, Le Mans multipliers, drop scores, pole / fastest-lap
+  points.
+- **Cross-event trends** — a car / driver / manufacturer's form across a season;
+  qualifying vs race pace; grid vs finish.
+- **Driver categories** (Bronze / Silver / Gold / Platinum) and **entry metadata**
+  (chassis / engine / tyre / category) — *if* the entry list / Classification CSV
+  exposes them. Am-class Bronze pace is a story of its own.
+- **Manufacturer / BoP lens** — class-performance comparison across events (data
+  permitting), to follow the Balance-of-Performance narrative.
+
+### 0.6.0 — Live
+
+Follow it as it happens.
+
+- **Live timing** via the existing `live` extra (socket.io) — streaming laps,
+  positions and gaps; live-updating charts; event hooks (pit, lead change, FCY).
+
+### Data & ecosystem (continuous)
+
+- Verified **Classification-CSV parser** — grid, points and penalties straight
+  from source (results are reconstructed from the laps today).
+- Wider **series / season coverage** & fixtures across WEC / ELMS / Asian Le Mans
+  / Le Mans Cup / IMSA, including historical archives (Le Mans deep dives).
+- **Race-report generator + CLI** — `endurancepy report 2024 WEC "Le Mans"` → one
+  shareable HTML with the strategy, race trace, gaps, pit stops and standings.
+- **Exports** (CSV / Parquet) and a hosted **docs site** with a rendered gallery.
+- **Plotting** — seaborn static charts, per-series palettes, animated
+  position/gap evolution.
 
 ## Non-goals
 
 - **Car telemetry / per-driver channels** — no public endurance source exists.
-- **Replicating any championship's exact regulations** — EndurancePy stays a
+- **A track map** — no public GPS / positional source for these archives.
+- **Replicating a championship's exact regulations** — EndurancePy stays a
   generic, configurable toolkit, not a rules engine.
