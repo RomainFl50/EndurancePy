@@ -12,8 +12,10 @@ __all__ = [
     "get_car_style",
     "get_class_color",
     "get_manufacturer_color",
+    "get_team_color",
     "list_classes",
     "list_manufacturers",
+    "list_teams",
 ]
 
 #: Line dashes / marker symbols cycled to tell apart cars sharing a class colour.
@@ -83,6 +85,48 @@ def list_classes() -> list[str]:
 def list_manufacturers() -> list[str]:
     """Return the known manufacturer names."""
     return list(MANUFACTURER_COLORS)
+
+
+#: Colour per team, keyed by a distinctive **substring** of the entrant name
+#: (entrant names vary a lot — "Ferrari AF Corse #51", "AF Corse" — so a
+#: containment match is more robust than an exact one). Insertion order matters
+#: when several keys could match.
+TEAM_COLORS: dict[str, str] = {
+    "TOYOTA GAZOO": "#EB0A1E",
+    "AF CORSE": "#DC0000",
+    "PORSCHE PENSKE": "#C9A227",
+    "PENSKE": "#C9A227",
+    "JOTA": "#1FA82C",
+    "CADILLAC": "#941A1D",
+    "BMW M TEAM WRT": "#0066B1",
+    "WRT": "#0066B1",
+    "PEUGEOT": "#1C3A5E",
+    "ALPINE": "#005BA9",
+    "ASTON MARTIN": "#00665E",
+    "LAMBORGHINI": "#DDB321",
+    "UNITED AUTOSPORTS": "#FF7F0E",
+    "IRON DAMES": "#E75480",
+    "IRON LYNX": "#1A1A1A",
+    "CORVETTE": "#C5B358",
+    "PROTON": "#E2001A",
+}
+
+
+def get_team_color(name: str) -> str:
+    """Return the hex colour for a team (matched on a distinctive substring).
+
+    Case-insensitive; returns :data:`DEFAULT_COLOR` when nothing matches.
+    """
+    upper = str(name).upper()
+    for key, color in TEAM_COLORS.items():
+        if key in upper:
+            return color
+    return DEFAULT_COLOR
+
+
+def list_teams() -> list[str]:
+    """Return the known team keys."""
+    return list(TEAM_COLORS)
 
 
 def get_car_style(car: str, class_name: str | None = None) -> dict[str, str]:

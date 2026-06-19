@@ -77,7 +77,9 @@ def _car_sort_key(car: str) -> tuple[int, Any]:
     return (0, int(text)) if text.isdigit() else (1, text)
 
 
-def plot_strategy(source: Any, *, title: str = "Race strategy") -> go.Figure:
+def plot_strategy(
+    source: Any, *, title: str = "Race strategy", show_driver_changes: bool = True
+) -> go.Figure:
     """Stint / strategy chart: one bar per stint, per car, coloured by class.
 
     Parameters
@@ -87,6 +89,9 @@ def plot_strategy(source: Any, *, title: str = "Race strategy") -> go.Figure:
         :class:`~endurancepy.core.Laps` table.
     title:
         Figure title.
+    show_driver_changes:
+        Mark each driver change (a stint that starts with a different driver) with
+        a black caret at the stint's first lap.
 
     Each car gets a horizontal bar per stint along the lap axis; the gaps between
     a car's bars are its pit stops. Bars are coloured by class (one legend entry
@@ -149,6 +154,23 @@ def plot_strategy(source: Any, *, title: str = "Race strategy") -> go.Figure:
                 "%{customdata[1]}<extra></extra>"
             ),
         )
+
+    if show_driver_changes:
+        ordered = stints.sort_values(["CarNumber", "Stint"])
+        previous = ordered.groupby("CarNumber")["drivers"].shift()
+        changes = ordered[
+            (ordered["Stint"] > 1) & previous.notna() & (ordered["drivers"] != previous)
+        ]
+        if not changes.empty:
+            fig.add_scatter(
+                x=changes["first"].astype(int),
+                y=changes["CarNumber"],
+                mode="markers",
+                name="Driver change",
+                marker={"symbol": "triangle-down", "color": "#111111", "size": 9},
+                customdata=changes["drivers"],
+                hovertemplate="Car %{y} → %{customdata} (lap %{x})<extra></extra>",
+            )
 
     fig.update_layout(
         title=title,

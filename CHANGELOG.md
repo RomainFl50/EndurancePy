@@ -29,6 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     within a crew.
   - `plotting.plot_top_speeds` — top-speed (km/h) distribution per class.
   - `plot_pace(kind="violin")` — box (default) or violin distributions.
+  - `plot_strategy` marks driver changes (`show_driver_changes=`).
+  - `plotting.get_team_color` / `TEAM_COLORS` / `list_teams` — team colours.
+  - `setup_mpl(theme="light"|"dark")`, plus `laptime_formatter()` /
+    `format_time_axis(ax)` to render a seconds axis as `M:SS.mmm` on the
+    matplotlib/seaborn path.
+  - Documentation: a [plotting gallery](docs/plotting.md).
   - `plotting.add_track_status(fig, source)` — shade FCY / safety-car / code-60 /
     red-flag lap windows on any lap-axis chart.
   - `plotting.get_car_style(car, class)` — class colour + a per-car dash/marker so

@@ -99,8 +99,8 @@ fastest = laps.pick_fastest()
 session.track_status          # green / FCY / SC / code 60 / red
 ```
 
-See the **[usage guide](docs/usage.md)** and runnable **[examples/](examples/)**
-(scripts + a Jupyter notebook) for more.
+See the **[usage guide](docs/usage.md)**, the **[plotting gallery](docs/plotting.md)**
+and runnable **[examples/](examples/)** (scripts + a Jupyter notebook) for more.
 
 ## Roadmap
 

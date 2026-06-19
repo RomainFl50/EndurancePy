@@ -43,8 +43,8 @@ never showing/blocking internally. (✅ = shipped.)
 - ✅ **`plot_fastest_laps`** — best lap per car (delta to overall best), by class.
 - ✅ **`plot_stint_pace`** — lap time vs lap-in-stint (tyre/fuel degradation).
 - ✅ **`plot_top_speeds`** — top-speed distribution per class.
-- Mark pit stops / driver changes explicitly on `plot_strategy` (pit-stop
-  *durations* need the raw `PIT_TIME`, not currently kept — see backlog).
+- ✅ **Driver changes** are marked on `plot_strategy` (a caret at each new-driver
+  stint). Pit-stop *durations* still need the raw `PIT_TIME` (not kept — backlog).
 
 ### Colour & style system
 
@@ -52,20 +52,21 @@ never showing/blocking internally. (✅ = shipped.)
   cars sharing one class colour stay distinguishable.
 - ✅ **De-duplicated legend** — charts group traces by class (one legend header per
   class), so the `seen: set` copy-paste is gone.
-- **`get_team_color` + a team registry** (today only class + manufacturer; FastF1
-  has team colours).
+- ✅ **`get_team_color` + `TEAM_COLORS`** — team colours matched on a distinctive
+  substring of the entrant name.
 - **Per-series palettes** (IMSA GTP/GTD vs WEC Hypercar/LMGT3) and wider coverage.
 
 ### Axes & theming
 
-- ✅ **Lap-time axis & hover formatting** — lap-time charts use a clock axis
-  (`M:SS.mmm`) and hovers render durations via `format_timedelta`. (A
-  `matplotlib.ticker` Formatter for the seaborn path is still to do; Timple is the
-  matplotlib-only alternative — see the library notes below.)
+- ✅ **Lap-time axis & hover formatting** — Plotly charts use a clock axis
+  (`M:SS.mmm`) and format hovers via `format_timedelta`; `laptime_formatter()` /
+  `format_time_axis(ax)` do the same on the matplotlib/seaborn path. (Timple is
+  the matplotlib-only alternative — see the library notes below.)
 - ✅ **Track-status overlay** — `add_track_status(fig, source)` shades FCY / safety
   car / code 60 / red-flag lap windows on any lap-axis chart.
-- **Light/dark theme** and a richer `setup_mpl(theme=...)` (fonts, rcParams).
-- **Seaborn static path** (`plot_pace` as violin/box, publication styling).
+- ✅ **Light/dark theme** — `setup_mpl(theme="light"|"dark")`.
+- **Seaborn static path** (ready-made static `plot_pace`/distribution charts on
+  top of the styling helpers).
 
 ### Data prerequisites (done *with* the plotting)
 
@@ -133,8 +134,8 @@ Not scheduled, roughly by value:
   ELMS / Asian Le Mans / Le Mans Cup / IMSA, including older archives.
 - **Standings** — richer, series-specific points/regulations on top of the generic
   `compute_standings` (bonus/pole points, drop scores, Le Mans multipliers).
-- **Docs** — a "plotting gallery" mirroring FastF1's examples gallery, plus a
-  fuller user guide.
+- **Docs** — ✅ a [plotting gallery](docs/plotting.md) is in; still want a fuller
+  user guide and rendered chart screenshots.
 
 ## Non-goals
 

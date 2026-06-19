@@ -31,24 +31,32 @@ from endurancepy.plotting.colors import (
     CLASS_COLORS,
     DEFAULT_COLOR,
     MANUFACTURER_COLORS,
+    TEAM_COLORS,
     get_car_style,
     get_class_color,
     get_manufacturer_color,
+    get_team_color,
     list_classes,
     list_manufacturers,
+    list_teams,
 )
-from endurancepy.plotting.style import setup_mpl
+from endurancepy.plotting.style import format_time_axis, laptime_formatter, setup_mpl
 
 __all__ = [
     "CLASS_COLORS",
     "DEFAULT_COLOR",
     "MANUFACTURER_COLORS",
+    "TEAM_COLORS",
     "add_track_status",
+    "format_time_axis",
     "get_car_style",
     "get_class_color",
     "get_manufacturer_color",
+    "get_team_color",
+    "laptime_formatter",
     "list_classes",
     "list_manufacturers",
+    "list_teams",
     "plot_driver_comparison",
     "plot_fastest_laps",
     "plot_gap",

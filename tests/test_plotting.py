@@ -49,26 +49,69 @@ def test_setup_mpl_if_available() -> None:
     plotting.setup_mpl()  # should not raise when matplotlib is installed
 
 
+def test_setup_mpl_dark_theme() -> None:
+    plt = pytest.importorskip("matplotlib.pyplot")
+    plotting.setup_mpl(theme="dark")
+    assert plt.rcParams["figure.facecolor"] == "#111418"
+    plotting.setup_mpl(theme="light")  # restore
+
+
+def test_laptime_axis_formatter() -> None:
+    pytest.importorskip("matplotlib")
+    fmt = plotting.laptime_formatter()
+    assert fmt(118.056, None) == "1:58.056"  # 118.056s -> M:SS.mmm
+
+
+def test_format_time_axis_sets_formatter() -> None:
+    plt = pytest.importorskip("matplotlib.pyplot")
+    _, ax = plt.subplots()
+    assert plotting.format_time_axis(ax, "y") is ax
+    assert ax.yaxis.get_major_formatter()(94.5, None) == "1:34.500"
+    plt.close("all")
+
+
+def test_get_team_color() -> None:
+    # matched on a distinctive substring, case-insensitive
+    assert (
+        plotting.get_team_color("Ferrari AF Corse #51")
+        == plotting.TEAM_COLORS["AF CORSE"]
+    )
+    assert plotting.get_team_color("iron dames") == plotting.TEAM_COLORS["IRON DAMES"]
+    assert plotting.get_team_color("Unknown Team") == plotting.DEFAULT_COLOR
+    assert plotting.list_teams()
+
+
 def test_plot_strategy_one_bar_per_stint() -> None:
     go = pytest.importorskip("plotly.graph_objects")
     laps = read_analysis(FIXTURE)
     fig = plotting.plot_strategy(laps)
 
     assert isinstance(fig, go.Figure)
-    # one trace per class, coloured by the class palette
-    assert [t.name for t in fig.data] == ["HYPERCAR", "LMGT3"]
-    assert fig.data[0].marker.color == plotting.get_class_color("HYPERCAR")
+    bars = [t for t in fig.data if t.type == "bar"]
+    # one bar trace per class, coloured by the class palette
+    assert [t.name for t in bars] == ["HYPERCAR", "LMGT3"]
+    assert bars[0].marker.color == plotting.get_class_color("HYPERCAR")
     # one bar per (car, stint): car 7 pits & changes driver -> 2 stints
-    assert sum(len(t.y) for t in fig.data) == 4
-    hypercar = fig.data[0]
+    assert sum(len(t.y) for t in bars) == 4
     car7 = [
         (base, length)
-        for car, base, length in zip(hypercar.y, hypercar.base, hypercar.x, strict=True)
+        for car, base, length in zip(bars[0].y, bars[0].base, bars[0].x, strict=True)
         if car == "7"
     ]
     assert car7 == [(1, 2), (3, 2)]  # laps 1-2 then 3-4
-    # cars ordered by class then number
     assert fig.layout.yaxis.categoryarray == ("7", "8", "83")
+
+
+def test_plot_strategy_marks_driver_changes() -> None:
+    pytest.importorskip("plotly.graph_objects")
+    laps = read_analysis(FIXTURE)
+    fig = plotting.plot_strategy(laps)
+    changes = [t for t in fig.data if t.name == "Driver change"]
+    assert len(changes) == 1
+    assert list(changes[0].x) == [3]  # car 7's 2nd stint (driver A -> B) starts lap 3
+    # opt-out removes the markers
+    plain = plotting.plot_strategy(laps, show_driver_changes=False)
+    assert not [t for t in plain.data if t.name == "Driver change"]
 
 
 def test_plot_strategy_empty_laps() -> None:
