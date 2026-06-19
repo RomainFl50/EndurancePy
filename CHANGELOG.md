@@ -7,13 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
+  charts (zoom / hover / legend-toggle keep a large field readable). Each returns
+  a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
+  extra (`pip install endurancepy[interactive]`).
+  - `plotting.plot_strategy` — stint/strategy Gantt (one bar per stint per car;
+    gaps = pit stops; hover = driver + lap range).
+  - `plotting.plot_lap_evolution` — lap time vs lap, one line per car, `M:SS.mmm`
+    clock axis.
+  - `plotting.plot_pace` — lap-time distribution box per class.
+  - `plotting.plot_position_evolution` — position vs lap (overall or `in_class`).
+  - `plotting.plot_gap` — gap to the (class) leader over the laps.
+  - `plotting.plot_race_trace` — cumulative delta to a constant reference pace.
+  - `plotting.plot_fastest_laps` — each car's best lap as a bar (delta to the
+    overall best), sorted, by class.
+  - `plotting.plot_stint_pace` — lap time vs lap-in-stint (degradation), one line
+    per stint; `car=` to focus on one car.
+  - `plotting.plot_driver_comparison(source, car)` — pace distribution per driver
+    within a crew.
+  - `plotting.plot_top_speeds` — top-speed (km/h) distribution per class.
+  - `plot_pace(kind="violin")` — box (default) or violin distributions.
+  - `plot_strategy` marks driver changes (`show_driver_changes=`).
+  - `plotting.get_team_color` / `TEAM_COLORS` / `list_teams` — team colours.
+  - `setup_mpl(theme="light"|"dark")`, plus `laptime_formatter()` /
+    `format_time_axis(ax)` to render a seconds axis as `M:SS.mmm` on the
+    matplotlib/seaborn path.
+  - Documentation: a [plotting gallery](docs/plotting.md).
+  - `plotting.add_track_status(fig, source)` — shade FCY / safety-car / code-60 /
+    red-flag lap windows on any lap-axis chart.
+  - `plotting.get_car_style(car, class)` — class colour + a per-car dash/marker so
+    cars sharing a class colour stay distinguishable.
+- Per-lap **`GapToLeader` / `GapToLeaderInClass`** are now computed by the
+  Analysis parser (elapsed-time delta to the leader at equal lap count, overall
+  and within the class) — previously left empty. They underpin `plot_gap` and the
+  race trace.
+- The `plotting` module is now a package (`colors` / `style` / `charts`); every
+  existing name is re-exported unchanged. Examples:
+  [`plot_strategy.py`](examples/plot_strategy.py),
+  [`plot_race_trace.py`](examples/plot_race_trace.py).
+
 ### Planned
 
-- **0.3.0 will focus on plotting.** The colour helpers (`get_class_color` /
-  `get_manufacturer_color`) are only a foundation; the next release is about
-  improving everything plotting-related — ready-made chart helpers (pace by
-  class, lap evolution, stint/strategy, gaps), better styling/theming, and
-  richer plotting examples — rather than leaving every figure to be hand-built.
+- **0.3.0 will focus on plotting** — ready-made chart helpers (strategy/stint
+  Gantt, race trace, pace, lap evolution, gaps), a colour/style system beyond the
+  current class/manufacturer colours, lap-time axis formatting and a track-status
+  overlay. See [`ROADMAP.md`](ROADMAP.md) for the full plan and the plotting
+  library evaluation.
 
 ## [0.2.0] - 2026-06-18
 

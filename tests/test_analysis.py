@@ -118,3 +118,14 @@ def test_pick_accurate(laps: Laps) -> None:
     accurate = laps.pick_accurate()
     assert len(accurate) == 8
     assert bool(accurate["IsAccurate"].all())
+
+
+def test_gap_to_leader(laps: Laps) -> None:
+    # On lap 1: car 7 leads (95.0s), car 8 is +1s, car 83 (other class) +15s.
+    assert _row(laps, "7", 1)["GapToLeader"] == pd.Timedelta(0)
+    assert _row(laps, "8", 1)["GapToLeader"] == pd.Timedelta(seconds=1)
+    assert _row(laps, "83", 1)["GapToLeader"] == pd.Timedelta(seconds=15)
+    # The leader's gap is zero at every lap (overall and per class).
+    by_lap = laps.groupby("LapNumber")["GapToLeader"].min()
+    assert (by_lap == pd.Timedelta(0)).all()
+    assert _row(laps, "83", 1)["GapToLeaderInClass"] == pd.Timedelta(0)  # LMGT3 leader

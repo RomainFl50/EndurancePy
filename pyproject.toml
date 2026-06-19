@@ -43,6 +43,7 @@ dependencies = [
 
 [project.optional-dependencies]
 plot = ["matplotlib>=3.6"]
+interactive = ["plotly>=5.18"]
 pdf = ["pdfplumber>=0.10"]
 live = ["python-socketio[client]>=5.10"]
 dev = [
