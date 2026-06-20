@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `endurancepy.battles(session|laps, within=, min_laps=, in_class=)` — on-track
     battles: pairs of cars running within a gap for several consecutive laps
     (robust to position swaps), with the lap span and closest/mean gap.
+  - `endurancepy.time_lost(session|laps, threshold=)` — per-car time lost vs the
+    car's own clean (green) median pace, a rough traffic/mistakes proxy.
   - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
     in the pits), coloured by class.
   - The Analysis parser now fills **`Hour`** (time of day, decimal hours, from the

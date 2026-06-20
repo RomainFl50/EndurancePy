@@ -22,6 +22,7 @@ __all__ = [
     "lead_changes",
     "pit_stops",
     "stint_summary",
+    "time_lost",
 ]
 
 #: Columns (and dtypes) of the pit-stop table returned by :func:`pit_stops`.
@@ -72,6 +73,15 @@ _LEAD_DTYPES: dict[str, str] = {
     "FromLap": "Int64",
     "ToLap": "Int64",
     "Laps": "Int64",
+}
+
+#: Columns (and dtypes) of the table returned by :func:`time_lost`.
+_TIME_LOST_DTYPES: dict[str, str] = {
+    "CarNumber": "string",
+    "Class": "string",
+    "Laps": "Int64",
+    "Reference": "timedelta64[ns]",
+    "TimeLost": "timedelta64[ns]",
 }
 
 #: Columns (and dtypes) of the battle table returned by :func:`battles`.
@@ -384,3 +394,46 @@ def battles(
         return _empty(_BATTLE_DTYPES)
     table = pd.DataFrame(rows).astype(_BATTLE_DTYPES)
     return table.sort_values(["FromLap", "Class", "CarA"]).reset_index(drop=True)
+
+
+def time_lost(
+    source: Laps | Session | pd.DataFrame, *, threshold: str = "0s"
+) -> pd.DataFrame:
+    """Per-car time lost relative to the car's own clean pace.
+
+    For each car, the reference is the median of its clean **green** laps (timed,
+    no pit in/out; falls back to all clean laps when no green flag is recorded).
+    ``TimeLost`` sums, over those laps, how much each was slower than the
+    reference by more than ``threshold`` — a rough proxy for traffic and mistakes
+    (it also picks up tyre degradation). Ordered by car.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or "LapTime" not in frame:
+        return _empty(_TIME_LOST_DTYPES)
+    margin = pd.Timedelta(threshold)
+
+    rows = []
+    for car, group in frame.dropna(subset=["LapTime"]).groupby("CarNumber", sort=True):
+        clean = _clean_laps(group)
+        if "TrackStatus" in clean.columns:
+            green = clean[clean["TrackStatus"] == "GF"]
+            pace = green if not green.empty else clean
+        else:
+            pace = clean
+        if pace.empty:
+            continue
+        reference = pace["LapTime"].median()
+        excess = pace["LapTime"] - reference
+        rows.append(
+            {
+                "CarNumber": car,
+                "Class": group["Class"].iloc[-1],
+                "Laps": len(pace),
+                "Reference": reference,
+                "TimeLost": excess[excess > margin].sum(),
+            }
+        )
+    if not rows:
+        return _empty(_TIME_LOST_DTYPES)
+    table = pd.DataFrame(rows).astype(_TIME_LOST_DTYPES)
+    return table.sort_values("CarNumber").reset_index(drop=True)

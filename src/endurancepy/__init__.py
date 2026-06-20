@@ -43,6 +43,7 @@ from endurancepy.strategy import (
     lead_changes,
     pit_stops,
     stint_summary,
+    time_lost,
 )
 from endurancepy.utils import format_laptime, format_timedelta
 
@@ -76,4 +77,5 @@ __all__ = [
     "read_weather",
     "set_log_level",
     "stint_summary",
+    "time_lost",
 ]

@@ -136,9 +136,10 @@ its keep for analysts.
   common fuel load. Still to come: tyre-life estimates.
 - **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
   pace and consistency. Still to come: day vs night running, best/worst stint.
-- **Gap / interval engine** — ✅ `lead_changes()` (leadership periods) and
-  ✅ `battles()` (cars nose-to-tail within Xs for N laps). Still to come: real
-  on-track intervals (not just lap-aligned) and time lost in traffic.
+- **Gap / interval engine** — ✅ `lead_changes()` (leadership periods),
+  ✅ `battles()` (cars nose-to-tail within Xs for N laps) and ✅ `time_lost()` (vs a
+  car's own clean pace). Still to come: real on-track intervals (not just
+  lap-aligned).
 - **Session context fill** — ✅ `Hour` (time of day) is populated from the CSV and
   ✅ `add_day_night()` shades night windows on the charts. Still to come:
   `LapStartDate` (needs the session date) and the deferred session `Duration` /

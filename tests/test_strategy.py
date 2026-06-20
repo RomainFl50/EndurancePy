@@ -162,9 +162,21 @@ def test_battles_detected() -> None:
     assert ep.battles(df, within="0.1s", min_laps=3).empty
 
 
+def test_time_lost() -> None:
+    lost = ep.time_lost(_laps())
+    car8 = lost[lost["CarNumber"] == "8"].iloc[0]
+    # green clean laps [96, 95.5, 95.2] (lap 3 was FCY) -> median 95.5
+    assert car8["Laps"] == 3
+    assert car8["Reference"] == pd.Timedelta(seconds=95.5)
+    assert car8["TimeLost"] == pd.Timedelta(seconds=0.5)  # only lap 1 is above median
+    car7 = lost[lost["CarNumber"] == "7"].iloc[0]
+    assert car7["TimeLost"] == pd.Timedelta(seconds=0.25)
+
+
 def test_summaries_empty_laps() -> None:
     empty = _laps().iloc[0:0]
     assert ep.stint_summary(empty).empty
     assert ep.driver_summary(empty).empty
     assert ep.lead_changes(empty).empty
     assert ep.battles(empty).empty
+    assert ep.time_lost(empty).empty
