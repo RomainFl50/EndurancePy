@@ -27,6 +27,7 @@ LAPS_COLUMNS: dict[str, str] = {
     "Sector3SessionTime": "timedelta64[ns]",
     "PitInTime": "timedelta64[ns]",
     "PitOutTime": "timedelta64[ns]",
+    "PitTime": "timedelta64[ns]",  # reported time in the pits on the in-lap
     "LapStartTime": "timedelta64[ns]",
     "LapStartDate": "datetime64[ns]",
     # speeds

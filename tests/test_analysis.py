@@ -120,6 +120,16 @@ def test_pick_accurate(laps: Laps) -> None:
     assert bool(accurate["IsAccurate"].all())
 
 
+def test_pit_time_kept_on_in_lap(laps: Laps) -> None:
+    assert _row(laps, "7", 2)["PitTime"] == pd.Timedelta(seconds=30)  # the pit-in lap
+    assert pd.isna(_row(laps, "7", 1)["PitTime"])  # no stop on other laps
+
+
+def test_hour_of_day(laps: Laps) -> None:
+    # HOUR "14:01:35.000" -> 14 + 1/60 + 35/3600 decimal hours
+    assert _row(laps, "7", 1)["Hour"] == pytest.approx(14 + 1 / 60 + 35 / 3600)
+
+
 def test_gap_to_leader(laps: Laps) -> None:
     # On lap 1: car 7 leads (95.0s), car 8 is +1s, car 83 (other class) +15s.
     assert _row(laps, "7", 1)["GapToLeader"] == pd.Timedelta(0)

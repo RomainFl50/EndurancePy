@@ -24,12 +24,14 @@ if TYPE_CHECKING:
     import plotly.graph_objects as go
 
 __all__ = [
+    "add_day_night",
     "add_track_status",
     "plot_driver_comparison",
     "plot_fastest_laps",
     "plot_gap",
     "plot_lap_evolution",
     "plot_pace",
+    "plot_pit_stops",
     "plot_position_evolution",
     "plot_race_trace",
     "plot_stint_pace",
@@ -431,6 +433,53 @@ def add_track_status(fig: go.Figure, source: Any) -> go.Figure:
     return fig
 
 
+def add_day_night(
+    fig: go.Figure,
+    source: Any,
+    *,
+    night_start: float = 20.0,
+    night_end: float = 6.0,
+) -> go.Figure:
+    """Shade the night-time lap windows on a lap-axis chart (for 24h races).
+
+    Uses the per-lap ``Hour`` (time of day, populated by the Analysis parser):
+    laps whose hour is ``>= night_start`` or ``< night_end`` count as night. Adds
+    a dark band over each contiguous night run. A no-op when ``Hour`` is absent or
+    the race ran entirely in daylight. Returns ``fig`` for chaining.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or "Hour" not in frame:
+        return fig
+    hours = frame.dropna(subset=["LapNumber", "Hour"])
+    if hours.empty:
+        return fig
+
+    per_lap = hours.groupby("LapNumber")["Hour"].median()
+    runs: list[tuple[float, float]] = []
+    current: tuple[float, float] | None = None
+    for lap, hour in per_lap.items():
+        if hour >= night_start or hour < night_end:
+            current = (current[0], float(lap)) if current else (float(lap), float(lap))
+        elif current:
+            runs.append(current)
+            current = None
+    if current:
+        runs.append(current)
+
+    for start, end in runs:
+        fig.add_vrect(
+            x0=start - 0.5,
+            x1=end + 0.5,
+            fillcolor="#1A237E",
+            opacity=0.12,
+            line_width=0,
+            layer="below",
+            annotation_text="Night",
+            annotation_position="top left",
+        )
+    return fig
+
+
 def plot_fastest_laps(source: Any, *, title: str = "Fastest lap per car") -> go.Figure:
     """Each car's best lap as a bar — the delta to the overall best, by class.
 
@@ -562,6 +611,46 @@ def plot_driver_comparison(
             fig.add_box(y=laptimes, name=driver, marker_color=color)
     fig.update_layout(xaxis_title="Driver", yaxis_title="Lap time", showlegend=False)
     fig.update_yaxes(tickformat="%M:%S.%L")
+    return fig
+
+
+def plot_pit_stops(source: Any, *, title: str = "Pit stops") -> go.Figure:
+    """When each car pitted and for how long — a bubble per stop, by class.
+
+    x = in-lap, y = car, bubble size = time in the pits (hover shows it); coloured
+    by class. Builds on :func:`endurancepy.strategy.pit_stops`.
+    """
+    go = _import_go()
+    from endurancepy.strategy import pit_stops
+
+    fig = go.Figure(layout={"title": title})
+    stops = pit_stops(source)
+    if stops.empty:
+        return fig
+    stops = stops.copy()
+    stops["_secs"] = stops["PitTime"].dt.total_seconds()
+    stops["_fmt"] = stops["PitTime"].map(format_timedelta)
+    longest = stops["_secs"].max()
+    sizeref = 2.0 * (longest if longest and longest > 0 else 1.0) / (36.0**2)
+    for klass, rows in stops.groupby("Class", sort=True):
+        fig.add_scatter(
+            x=rows["Lap"],
+            y=rows["CarNumber"],
+            mode="markers",
+            name=str(klass),
+            legendgroup=str(klass),
+            marker={
+                "color": get_class_color(str(klass)),
+                "size": rows["_secs"].fillna(0.0),
+                "sizemode": "area",
+                "sizeref": sizeref,
+                "sizemin": 5,
+            },
+            customdata=rows["_fmt"],
+            hovertemplate="Car %{y} · lap %{x}<br>pit %{customdata}<extra></extra>",
+        )
+    fig.update_layout(xaxis_title="Lap number", yaxis_title="Car", legend_title="Class")
+    fig.update_xaxes(rangemode="tozero")
     return fig
 
 

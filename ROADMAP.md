@@ -127,20 +127,23 @@ depends on data we still need to verify.
 The story of an endurance race *is* strategy — this is where the library earns
 its keep for analysts.
 
-- **Pit-stop analysis** — keep the raw `PIT_TIME` on the laps, then derive each
-  stop's stationary time, pit-lane loss, stop count, and **undercut / overcut**
-  detection. (Today the stationary time is folded into the out-lap, so this is
-  blocked on keeping `PIT_TIME`.)
-- **Stint & degradation** — fuel-corrected pace, a per-stint degradation slope and
-  tyre-life estimate, "best achievable" vs actual.
-- **Driver analysis** — per-driver pace (median + consistency), time in car, day
-  vs night running, best/worst stint; crew comparison across the whole race.
-- **Gap / interval engine** — real on-track intervals (not just lap-aligned),
-  time lost in traffic, **battle detection** (cars within Xs for N laps), lead
-  changes and laps-in-the-lead per car/class.
-- **Session context fill** — populate `Hour` / `LapStartDate`, enabling a real
-  time axis and day/night shading on the charts. Also the deferred session
-  `Duration` / `EndTime` for non-races (from the lap data).
+- **Pit-stop analysis** — ✅ the raw `PitTime` is kept on each in-lap;
+  `pit_stops()` lists every stop with the position gained/lost across it (a rough
+  undercut/overcut outcome) and `plot_pit_stops` charts them. Still to come:
+  pit-lane time loss and proper pairwise undercut/overcut attribution.
+- **Stint & degradation** — ✅ `stint_summary()` gives per-stint best/median pace
+  and a degradation slope (s/lap), and ✅ `fuel_corrected()` normalises pace to a
+  common fuel load. Still to come: tyre-life estimates.
+- **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
+  pace and consistency. Still to come: day vs night running, best/worst stint.
+- **Gap / interval engine** — ✅ `lead_changes()` (leadership periods),
+  ✅ `battles()` (cars nose-to-tail within Xs for N laps) and ✅ `time_lost()` (vs a
+  car's own clean pace). Still to come: real on-track intervals (not just
+  lap-aligned).
+- **Session context fill** — ✅ `Hour` (time of day) is populated from the CSV and
+  ✅ `add_day_night()` shades night windows on the charts. Still to come:
+  `LapStartDate` (needs the session date) and the deferred session `Duration` /
+  `EndTime` for non-races.
 
 ### 0.5.0 — Season & championship
 
