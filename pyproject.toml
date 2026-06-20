@@ -44,6 +44,7 @@ dependencies = [
 [project.optional-dependencies]
 plot = ["matplotlib>=3.6"]
 interactive = ["plotly>=5.18"]
+regulations = ["pyyaml>=6"]
 pdf = ["pdfplumber>=0.10"]
 live = ["python-socketio[client]>=5.10"]
 dev = [
@@ -52,6 +53,8 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.8",
     "types-requests",
+    "pyyaml>=6",
+    "types-PyYAML",
 ]
 
 [project.urls]

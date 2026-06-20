@@ -19,5 +19,9 @@ class SeriesNotSupportedError(EndurancePyError):
     """Raised when an unknown or unsupported racing series is requested."""
 
 
+class RegulationsNotAvailableError(EndurancePyError):
+    """Raised when no stored regulations exist for the requested series/season."""
+
+
 class ParsingError(EndurancePyError):
     """Raised when a timing archive file cannot be parsed as expected."""

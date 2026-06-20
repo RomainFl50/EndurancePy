@@ -1,0 +1,22 @@
+series: IMSA
+season: 2024
+status: approximate   # base WeatherTech race points; verify the tail / bonuses
+classes: [GTP, LMP2, GTD PRO, GTD]
+
+points:
+  # 350 win, 320, 300, 280, 260, then -10 per position (P6=250, P7=240, ...).
+  race: [350, 320, 300, 280, 260, 250, 240, 230, 220, 210,
+         200, 190, 180, 170, 160, 150, 140, 130, 120, 110]
+  pole: 0            # IMSA qualifying/bonus points not encoded yet (see sources)
+  per_class: true
+  le_mans_multiplier: 1.0
+  drop_scores: 0
+
+tyres:
+  notes: "free choice of how many tyres are changed at each stop"
+
+sources:
+  - title: "How The 2024 IMSA Championships Will Be Won (DailySportscar)"
+    url: "https://www.dailysportscar.com/2024/10/11/how-the-2024-imsa-championships-will-be-won.html"
+  - title: "IMSA official points standings / sporting regulations"
+    url: "https://www.imsa.com/"

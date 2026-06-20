@@ -15,9 +15,12 @@ Example::
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+
+if TYPE_CHECKING:
+    from endurancepy.regulations import Regulations
 
 __all__ = ["POINTS_SYSTEMS", "Standings", "compute_standings"]
 
@@ -64,7 +67,8 @@ def compute_standings(
     *,
     points: str | Sequence[float] | dict[int, float] | None = None,
     by: str = "CarNumber",
-    per_class: bool = False,
+    per_class: bool | None = None,
+    regulations: Regulations | None = None,
 ) -> Standings:
     """Aggregate championship standings from a sequence of session results.
 
@@ -80,8 +84,20 @@ def compute_standings(
         ``"TeamName"`` or ``"Manufacturer"``.
     per_class:
         If true, award points by ``PositionInClass`` and rank within each class.
+    regulations:
+        Optional :class:`~endurancepy.regulations.Regulations` (e.g.
+        ``ep.regulations("WEC", 2024)``): its points scale and per-class flag are
+        used unless ``points`` / ``per_class`` are passed explicitly. (The Le Mans
+        multiplier and drop scores it carries are not applied here yet — they need
+        per-event context.)
     """
+    if regulations is not None:
+        if points is None:
+            points = list(regulations.points.race)
+        if per_class is None:
+            per_class = regulations.points.per_class
     table = _resolve_points(points)
+    per_class = bool(per_class)
     position_column = "PositionInClass" if per_class else "Position"
 
     aggregate: dict[tuple[Any, ...], dict[str, Any]] = {}

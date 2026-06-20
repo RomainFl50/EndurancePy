@@ -35,6 +35,7 @@ from endurancepy.events import (
     list_seasons,
 )
 from endurancepy.logger import enable_console_logging, set_log_level
+from endurancepy.regulations import Regulations, list_regulations, regulations
 from endurancepy.standings import Standings, compute_standings
 from endurancepy.utils import format_laptime, format_timedelta
 
@@ -47,6 +48,7 @@ __all__ = [
     "Cache",
     "Event",
     "EventSchedule",
+    "Regulations",
     "Series",
     "Standings",
     "__version__",
@@ -57,9 +59,11 @@ __all__ = [
     "get_event",
     "get_event_schedule",
     "get_session",
+    "list_regulations",
     "list_seasons",
     "read_analysis",
     "read_classification",
     "read_weather",
+    "regulations",
     "set_log_level",
 ]

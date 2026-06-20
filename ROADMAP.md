@@ -146,9 +146,20 @@ its keep for analysts.
 
 Zoom out from one race to the title fight.
 
-- **Series-specific points** on top of the generic `compute_standings` — WEC /
-  IMSA / ELMS systems, Le Mans multipliers, drop scores, pole / fastest-lap
-  points.
+- **Regulations store** — ✅ a curated YAML knowledge base of each series/season's
+  scoring (`ep.regulations(series, year)` / `list_regulations()`), each file
+  citing its **source URL** and a verified/approximate status. Ships WEC/IMSA/ELMS
+  points; extensible by dropping a file in `regulations/data/<SERIES>/<year>.yaml`.
+- **Series-specific points** — ✅ `compute_standings(regulations=…)` applies the
+  stored points scale and per-class flag. Still to come: applying the Le Mans
+  multiplier and drop scores (need per-event context), and pole/fastest-lap points.
+- **Cross-event trends** — a car / driver / manufacturer's form across a season;
+  qualifying vs race pace; grid vs finish.
+- **Driver categories** (Bronze / Silver / Gold / Platinum) and **entry metadata**
+  (chassis / engine / tyre / category) — *if* the entry list / Classification CSV
+  exposes them. Am-class Bronze pace is a story of its own.
+- **Manufacturer / BoP lens** — class-performance comparison across events (data
+  permitting), to follow the Balance-of-Performance narrative.
 - **Cross-event trends** — a car / driver / manufacturer's form across a season;
   qualifying vs race pace; grid vs finish.
 - **Driver categories** (Bronze / Silver / Gold / Platinum) and **entry metadata**

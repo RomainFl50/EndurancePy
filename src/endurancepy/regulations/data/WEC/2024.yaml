@@ -1,0 +1,22 @@
+series: WEC
+season: 2024
+status: verified
+classes: [Hypercar, LMGT3]
+
+points:
+  race: [25, 18, 15, 12, 10, 8, 6, 4, 2, 1]   # P1..P10, per class
+  pole: 1            # one point for pole in each class
+  per_class: true
+  le_mans_multiplier: 1.5   # Le Mans points are worth 1.5x (winner 38)
+  drop_scores: 0
+
+tyres:
+  # Allocation is governed by the regs; the NUMBER of tyres changed per stop is a
+  # free team choice and is not published in the timing data.
+  notes: "free choice of how many tyres (1-4) are changed at each stop"
+
+sources:
+  - title: "Focus on the 24 Hours of Le Mans regulations: points allocation"
+    url: "https://www.24h-lemans.com/en/news/focus-on-the-24-hours-of-le-mans-regulations-points-allocation-48542"
+  - title: "FIA WEC official site / sporting regulations"
+    url: "https://www.fiawec.com/"

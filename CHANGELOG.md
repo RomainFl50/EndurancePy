@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Championship regulations store (0.5.0, in progress).** A small, curated YAML
+  knowledge base of each series/season's **scoring** rules, so standings can be
+  series-accurate.
+  - `endurancepy.regulations(series, year)` → a `Regulations` (points scale, pole
+    / fastest-lap points, per-class flag, Le Mans multiplier, drop scores, class
+    list, tyre context) and `list_regulations()` to browse what's stored.
+  - Every file records the **source URL(s)** it was built from and a
+    `verified`/`approximate` status, so the data can be checked or extended later.
+    Ships WEC 2023-2024, IMSA 2024, ELMS 2024 (scope: points).
+  - `compute_standings(..., regulations=ep.regulations("WEC", 2024))` uses the
+    stored points scale and per-class flag. PyYAML is the optional `regulations`
+    extra.
+  - Honest scope: per-stop tyre changes are a free team choice and aren't in the
+    timing data, so regulations give tyre *allocation* context only.
+
 - **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns
   a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
