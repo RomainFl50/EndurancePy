@@ -127,12 +127,13 @@ depends on data we still need to verify.
 The story of an endurance race *is* strategy — this is where the library earns
 its keep for analysts.
 
-- **Pit-stop analysis** — ✅ the raw `PitTime` is now kept on each in-lap;
-  `pit_stops()` lists every stop and `plot_pit_stops` charts them. Still to come:
-  per-stop pit-lane loss and **undercut / overcut** detection.
+- **Pit-stop analysis** — ✅ the raw `PitTime` is kept on each in-lap;
+  `pit_stops()` lists every stop with the position gained/lost across it (a rough
+  undercut/overcut outcome) and `plot_pit_stops` charts them. Still to come:
+  pit-lane time loss and proper pairwise undercut/overcut attribution.
 - **Stint & degradation** — ✅ `stint_summary()` gives per-stint best/median pace
-  and a degradation slope (s/lap). Still to come: fuel correction and tyre-life
-  estimates.
+  and a degradation slope (s/lap), and ✅ `fuel_corrected()` normalises pace to a
+  common fuel load. Still to come: tyre-life estimates.
 - **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
   pace and consistency. Still to come: day vs night running, best/worst stint.
 - **Gap / interval engine** — ✅ `lead_changes()` (leadership periods) and

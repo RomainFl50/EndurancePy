@@ -12,8 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Strategy analysis (0.4.0, in progress).**
   - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
     (previously discarded).
-  - `endurancepy.pit_stops(session|laps)` — one row per stop (car, in-lap, stint
-    that ended, time in the pits, class / manufacturer / team).
+  - `endurancepy.pit_stops(session|laps, settle=)` — one row per stop (car,
+    in-lap, stint that ended, time in the pits, class / manufacturer / team) plus
+    the overall position before vs after the stop (`PosBefore` / `PosAfter` /
+    `PlacesGained`) as a rough undercut/overcut outcome.
+  - `endurancepy.fuel_corrected(session|laps, rate=)` — fuel-correct each lap to
+    its stint-start fuel load (`rate` s/lap), so pace is comparable through a
+    stint. Returns a `Timedelta` Series.
   - `endurancepy.stint_summary(session|laps)` — one row per `(car, stint)`:
     driver, lap span, best/median lap and a **degradation** slope (s/lap).
   - `endurancepy.driver_summary(session|laps)` — one row per `(car, driver)`:

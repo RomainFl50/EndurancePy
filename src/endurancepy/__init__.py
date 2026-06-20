@@ -39,6 +39,7 @@ from endurancepy.standings import Standings, compute_standings
 from endurancepy.strategy import (
     battles,
     driver_summary,
+    fuel_corrected,
     lead_changes,
     pit_stops,
     stint_summary,
@@ -63,6 +64,7 @@ __all__ = [
     "enable_console_logging",
     "format_laptime",
     "format_timedelta",
+    "fuel_corrected",
     "get_event",
     "get_event_schedule",
     "get_session",

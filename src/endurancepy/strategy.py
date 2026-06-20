@@ -15,7 +15,14 @@ import pandas as pd
 if TYPE_CHECKING:
     from endurancepy.core import Laps, Session
 
-__all__ = ["battles", "driver_summary", "lead_changes", "pit_stops", "stint_summary"]
+__all__ = [
+    "battles",
+    "driver_summary",
+    "fuel_corrected",
+    "lead_changes",
+    "pit_stops",
+    "stint_summary",
+]
 
 #: Columns (and dtypes) of the pit-stop table returned by :func:`pit_stops`.
 _PIT_STOP_DTYPES: dict[str, str] = {
@@ -26,6 +33,9 @@ _PIT_STOP_DTYPES: dict[str, str] = {
     "Class": "string",
     "Manufacturer": "string",
     "TeamName": "string",
+    "PosBefore": "Int64",  # overall position on the lap before the stop
+    "PosAfter": "Int64",  # overall position `settle` laps after the stop
+    "PlacesGained": "Int64",  # PosBefore - PosAfter (+ = undercut/overcut worked)
 }
 
 #: Columns (and dtypes) of the stint table returned by :func:`stint_summary`.
@@ -106,34 +116,82 @@ def _laps_frame(source: Any) -> pd.DataFrame:
     return pd.DataFrame(laps)
 
 
-def pit_stops(source: Laps | Session | pd.DataFrame) -> pd.DataFrame:
+def pit_stops(
+    source: Laps | Session | pd.DataFrame, *, settle: int = 2
+) -> pd.DataFrame:
     """One row per pit stop, derived from the laps.
 
     A stop is an in-lap (a lap crossing the line in the pits). Each row gives the
     car, the in-lap number, the stint that just ended, the reported time in the
-    pits (``PitTime``, may be ``NaT`` when the source omits it) and the car's
-    class / manufacturer / team. Ordered by lap then car.
+    pits (``PitTime``, may be ``NaT``), the car's class / manufacturer / team, and
+    the overall position before the stop (`PosBefore`, the previous lap) versus
+    ``settle`` laps after it (`PosAfter`). `PlacesGained = PosBefore - PosAfter` is
+    a rough undercut/overcut outcome (positive = places gained across the stop).
+    Ordered by lap then car.
     """
     frame = _laps_frame(source)
     if frame.empty or "PitInTime" not in frame:
-        return pd.DataFrame({name: [] for name in _PIT_STOP_DTYPES}).astype(
-            _PIT_STOP_DTYPES
-        )
-
+        return _empty(_PIT_STOP_DTYPES)
     stops = frame[frame["PitInTime"].notna()]
-    table = pd.DataFrame(
-        {
-            "CarNumber": stops["CarNumber"],
-            "Lap": stops["LapNumber"],
-            "Stint": stops["Stint"],
-            "PitTime": stops["PitTime"],
-            "Class": stops["Class"],
-            "Manufacturer": stops["Manufacturer"],
-            "TeamName": stops["Team"],
+    if stops.empty:
+        return _empty(_PIT_STOP_DTYPES)
+
+    positions: dict[tuple[str, float], int] = {}
+    if "Position" in frame:
+        located = frame.dropna(subset=["LapNumber", "Position"])
+        positions = {
+            (str(car), float(lap)): int(pos)
+            for car, lap, pos in zip(
+                located["CarNumber"],
+                located["LapNumber"],
+                located["Position"],
+                strict=True,
+            )
         }
-    )
-    table = table.astype(_PIT_STOP_DTYPES)
+
+    rows = []
+    for stop in stops.itertuples(index=False):
+        car = str(stop.CarNumber)
+        lap = float(stop.LapNumber)
+        before = positions.get((car, lap - 1))
+        after = positions.get((car, lap + settle))
+        rows.append(
+            {
+                "CarNumber": stop.CarNumber,
+                "Lap": stop.LapNumber,
+                "Stint": stop.Stint,
+                "PitTime": stop.PitTime,
+                "Class": stop.Class,
+                "Manufacturer": stop.Manufacturer,
+                "TeamName": stop.Team,
+                "PosBefore": before,
+                "PosAfter": after,
+                "PlacesGained": (
+                    before - after if before is not None and after is not None else None
+                ),
+            }
+        )
+    table = pd.DataFrame(rows).astype(_PIT_STOP_DTYPES)
     return table.sort_values(["Lap", "CarNumber"]).reset_index(drop=True)
+
+
+def fuel_corrected(source: Laps | Session | pd.DataFrame, *, rate: float) -> pd.Series:
+    """Fuel-correct each lap to its stint-start (full-tank) fuel load.
+
+    Cars get lighter and faster through a stint; ``rate`` is how many **seconds
+    per lap** of fuel that benefit is worth. The correction adds ``rate`` × (laps
+    of fuel already burned) back onto each lap, so the returned lap times are
+    comparable at a common fuel load — what's left is tyre degradation, traffic
+    and driver pace. Returns a ``Timedelta`` Series aligned to the laps.
+    """
+    frame = _laps_frame(source)
+    if frame.empty or "LapTime" not in frame:
+        return pd.Series([], dtype="timedelta64[ns]")
+    by = ["CarNumber", "Stint"] if "Stint" in frame else ["CarNumber"]
+    stint_start = frame.groupby(by)["LapNumber"].transform("min")
+    burned = frame["LapNumber"] - stint_start  # laps of fuel used (0 at stint start)
+    correction = pd.to_timedelta(rate * burned, unit="s")
+    return frame["LapTime"] + correction
 
 
 def stint_summary(source: Laps | Session | pd.DataFrame) -> pd.DataFrame:

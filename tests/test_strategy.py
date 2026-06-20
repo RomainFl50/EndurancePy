@@ -28,12 +28,16 @@ def test_pit_stops_one_row_per_stop() -> None:
     assert stop["PitTime"] == pd.Timedelta(seconds=30)
     assert stop["Class"] == "HYPERCAR"
     assert stop["TeamName"] == "Toyota Gazoo Racing"
+    # car 7 led before the stop and came out behind car 8 -> lost a place
+    assert stop["PosBefore"] == 1
+    assert stop["PosAfter"] == 2
+    assert stop["PlacesGained"] == -1
 
 
 def test_pit_stops_dtypes_and_order() -> None:
     stops = ep.pit_stops(_laps())
     assert stops["Lap"].dtype == "Int64"
-    assert stops["Stint"].dtype == "Int64"
+    assert stops["PlacesGained"].dtype == "Int64"
     assert list(stops.columns) == [
         "CarNumber",
         "Lap",
@@ -42,7 +46,26 @@ def test_pit_stops_dtypes_and_order() -> None:
         "Class",
         "Manufacturer",
         "TeamName",
+        "PosBefore",
+        "PosAfter",
+        "PlacesGained",
     ]
+
+
+def test_fuel_corrected() -> None:
+    laps = _laps()
+    corrected = ep.fuel_corrected(laps, rate=0.5)  # 0.5 s/lap of fuel
+    table = laps.assign(FC=corrected)
+
+    def fc(car: str, lap: int) -> pd.Series:
+        return table[(table["CarNumber"] == car) & (table["LapNumber"] == lap)].iloc[0]
+
+    # stint-start lap (0 laps of fuel burned) is unchanged
+    start = fc("8", 1)
+    assert start["FC"] == start["LapTime"]
+    # 3 laps into the stint -> +3 * 0.5s added back
+    late = fc("8", 4)
+    assert late["FC"] == late["LapTime"] + pd.Timedelta(seconds=1.5)
 
 
 def test_pit_stops_empty_laps() -> None:
