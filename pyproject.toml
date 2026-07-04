@@ -77,7 +77,11 @@ select = ["E", "F", "I", "UP", "B", "W"]
 "tests/test_discovery*.py" = ["E501"]
 
 [tool.mypy]
-python_version = "3.10"
+# Analyse against the Python the lint job runs on. (Some typed deps, e.g. recent
+# numpy, ship PEP 695 `type` statements in their stubs that a 3.10 target can't
+# parse.) Our source's 3.10 support is enforced by ruff's py310 target and the
+# 3.10-3.12 test matrix.
+python_version = "3.12"
 files = ["src", "tests"]
 ignore_missing_imports = true
 # Several dependencies (requests_cache, pyarrow, rapidfuzz, matplotlib, ...) ship

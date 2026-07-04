@@ -36,6 +36,15 @@ from endurancepy.events import (
 )
 from endurancepy.logger import enable_console_logging, set_log_level
 from endurancepy.standings import Standings, compute_standings
+from endurancepy.strategy import (
+    battles,
+    driver_summary,
+    fuel_corrected,
+    lead_changes,
+    pit_stops,
+    stint_summary,
+    time_lost,
+)
 from endurancepy.utils import format_laptime, format_timedelta
 
 try:
@@ -50,16 +59,23 @@ __all__ = [
     "Series",
     "Standings",
     "__version__",
+    "battles",
     "compute_standings",
+    "driver_summary",
     "enable_console_logging",
     "format_laptime",
     "format_timedelta",
+    "fuel_corrected",
     "get_event",
     "get_event_schedule",
     "get_session",
+    "lead_changes",
     "list_seasons",
+    "pit_stops",
     "read_analysis",
     "read_classification",
     "read_weather",
     "set_log_level",
+    "stint_summary",
+    "time_lost",
 ]

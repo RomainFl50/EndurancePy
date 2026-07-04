@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Strategy analysis (0.4.0, in progress).**
+  - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
+    (previously discarded).
+  - `endurancepy.pit_stops(session|laps, settle=)` — one row per stop (car,
+    in-lap, stint that ended, time in the pits, class / manufacturer / team) plus
+    the overall position before vs after the stop (`PosBefore` / `PosAfter` /
+    `PlacesGained`) as a rough undercut/overcut outcome.
+  - `endurancepy.fuel_corrected(session|laps, rate=)` — fuel-correct each lap to
+    its stint-start fuel load (`rate` s/lap), so pace is comparable through a
+    stint. Returns a `Timedelta` Series.
+  - `endurancepy.stint_summary(session|laps)` — one row per `(car, stint)`:
+    driver, lap span, best/median lap and a **degradation** slope (s/lap).
+  - `endurancepy.driver_summary(session|laps)` — one row per `(car, driver)`:
+    laps, time in car, best/median lap and consistency (lap-time std-dev).
+  - `endurancepy.lead_changes(session|laps, in_class=False)` — leadership periods
+    (who led, which laps, how long); the transitions are the lead changes.
+  - `endurancepy.battles(session|laps, within=, min_laps=, in_class=)` — on-track
+    battles: pairs of cars running within a gap for several consecutive laps
+    (robust to position swaps), with the lap span and closest/mean gap.
+  - `endurancepy.time_lost(session|laps, threshold=)` — per-car time lost vs the
+    car's own clean (green) median pace, a rough traffic/mistakes proxy.
+  - `plotting.plot_pit_stops` — a bubble per stop (x = lap, y = car, size = time
+    in the pits), coloured by class.
+  - The Analysis parser now fills **`Hour`** (time of day, decimal hours, from the
+    CSV `HOUR` column) — enables a time axis and day/night analysis.
+  - `plotting.add_day_night(fig, source)` — shade the night-time lap windows on any
+    lap-axis chart (uses `Hour`), for 24h races.
+
 - **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns
   a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
