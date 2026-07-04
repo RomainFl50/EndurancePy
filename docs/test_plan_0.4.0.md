@@ -192,10 +192,11 @@ dire ; les charts 0.3.0 (`plot_strategy`, `plot_gap`, …) fonctionnent toujours
 
 ## 11. Reste à faire côté release
 
-`pyproject.toml` est passé en `0.4.0` et le CHANGELOG a sa section
-`## [0.4.0]` (elle englobe le jalon plotting 0.3.0, jamais publié séparément —
-les tags `v0.1.0`/`v0.2.0` existent déjà). Une fois ce plan validé et la branche
-mergée sur `main`, il ne reste que le tag :
+`pyproject.toml` est passé en `0.4.0` et le CHANGELOG a ses sections `## [0.4.0]`
+et `## [0.3.0]` (le jalon plotting garde sa section datée de son merge, mais n'a
+jamais été tagué ni publié — il part avec la v0.4.0 ; les tags `v0.1.0`/`v0.2.0`
+existent déjà). Une fois ce plan validé et la branche mergée sur `main`, il ne
+reste que le tag :
 
 ```bash
 git tag v0.4.0

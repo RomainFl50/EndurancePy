@@ -9,12 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2026-07-04
 
-This release also ships the 0.3.0 plotting milestone (merged 2026-06-19), which
-was never published separately.
+First version published since 0.2.0 — it also delivers everything under
+[0.3.0](#030---2026-06-19) below, which was never tagged or published separately.
 
 ### Added
 
-- **Strategy analysis (the 0.4.0 milestone).**
+- **Strategy analysis.**
   - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
     (previously discarded).
   - `endurancepy.pit_stops(session|laps, settle=)` — one row per stop (car,
@@ -42,7 +42,14 @@ was never published separately.
   - `plotting.add_day_night(fig, source)` — shade the night-time lap windows on any
     lap-axis chart (uses `Hour`), for 24h races.
 
-- **Interactive plotting (the 0.3.0 milestone).** A set of endurance-aware, interactive Plotly
+## [0.3.0] - 2026-06-19
+
+Merged to `main` on 2026-06-19 but never tagged or published to PyPI — these
+features first shipped in [v0.4.0](#040---2026-07-04).
+
+### Added
+
+- **Interactive plotting.** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns
   a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
   extra (`pip install endurancepy[interactive]`).
@@ -279,6 +286,7 @@ Le Mans Cup, IMSA) from the Al Kamel archives, with a FastF1-style API.
     extra). Colours are organised by class and manufacturer rather than driver.
 
 [Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.4.0...HEAD
-[0.4.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.2.0...v0.4.0
+[0.4.0]: https://github.com/RomainFl50/EndurancePy/compare/36c36a0...v0.4.0
+[0.3.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.2.0...36c36a0
 [0.2.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RomainFl50/EndurancePy/releases/tag/v0.1.0
