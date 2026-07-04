@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-04
+
+First version published since 0.2.0 — it also delivers everything under
+[0.3.0](#030---2026-06-19) below, which was never tagged or published separately.
+
 ### Added
 
-- **Strategy analysis (0.4.0, in progress).**
+- **Strategy analysis.**
   - The Analysis parser now keeps the reported **`PitTime`** on each in-lap
     (previously discarded).
   - `endurancepy.pit_stops(session|laps, settle=)` — one row per stop (car,
@@ -37,7 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `plotting.add_day_night(fig, source)` — shade the night-time lap windows on any
     lap-axis chart (uses `Hour`), for 24h races.
 
-- **Interactive plotting (0.3.0).** A set of endurance-aware, interactive Plotly
+## [0.3.0] - 2026-06-19
+
+Merged to `main` on 2026-06-19 but never tagged or published to PyPI — these
+features first shipped in [v0.4.0](#040---2026-07-04).
+
+### Added
+
+- **Interactive plotting.** A set of endurance-aware, interactive Plotly
   charts (zoom / hover / legend-toggle keep a large field readable). Each returns
   a native `plotly.graph_objects.Figure`. Plotly is the new optional `interactive`
   extra (`pip install endurancepy[interactive]`).
@@ -75,14 +87,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   existing name is re-exported unchanged. Examples:
   [`plot_strategy.py`](examples/plot_strategy.py),
   [`plot_race_trace.py`](examples/plot_race_trace.py).
-
-### Planned
-
-- **0.3.0 will focus on plotting** — ready-made chart helpers (strategy/stint
-  Gantt, race trace, pace, lap evolution, gaps), a colour/style system beyond the
-  current class/manufacturer colours, lap-time axis formatting and a track-status
-  overlay. See [`ROADMAP.md`](ROADMAP.md) for the full plan and the plotting
-  library evaluation.
 
 ## [0.2.0] - 2026-06-18
 
@@ -281,6 +285,8 @@ Le Mans Cup, IMSA) from the Al Kamel archives, with a FastF1-style API.
     `list_classes`/`list_manufacturers` and `setup_mpl` (needs the `plot`
     extra). Colours are organised by class and manufacturer rather than driver.
 
-[Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/RomainFl50/EndurancePy/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/RomainFl50/EndurancePy/compare/36c36a0...v0.4.0
+[0.3.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.2.0...36c36a0
 [0.2.0]: https://github.com/RomainFl50/EndurancePy/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/RomainFl50/EndurancePy/releases/tag/v0.1.0
