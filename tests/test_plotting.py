@@ -204,6 +204,7 @@ def test_plot_pit_stops_one_bubble_per_stop() -> None:
 def test_add_day_night_shades_night_laps() -> None:
     import pandas as pd
 
+    pytest.importorskip("plotly.graph_objects")
     laps = read_analysis(FIXTURE)
     # the fixture runs at ~14:00 -> daylight only, no bands
     day = plotting.add_day_night(plotting.plot_gap(laps), laps)
