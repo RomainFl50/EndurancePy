@@ -24,6 +24,11 @@ python -m pytest -q          # attendu : tout passe (3 skips réseau si hors-lig
 La suite offline valide déjà la logique sur la fixture synthétique ; les étapes
 suivantes valident le comportement sur une vraie course.
 
+> **Version exécutable** : le notebook
+> [`examples/test_plan_0_4_0.ipynb`](../examples/test_plan_0_4_0.ipynb) déroule
+> ce plan cellule par cellule, avec les contrôles automatisables imprimés en
+> ✅/❌ ; ne restent à juger à l'œil que les critères de plausibilité ci-dessous.
+
 ## 1. Charger une course riche (24h du Mans recommandé)
 
 Une course de 24h coche toutes les cases : beaucoup d'arrêts, relais complets,
@@ -185,9 +190,14 @@ ep.pit_stops(quali); ep.lead_changes(quali); ep.battles(quali)
 ✅ Critères : aucun crash ; DataFrames vides bien typés quand il n'y a rien à
 dire ; les charts 0.3.0 (`plot_strategy`, `plot_gap`, …) fonctionnent toujours.
 
-## 11. Reste à faire côté release (constat, pas un test)
+## 11. Reste à faire côté release
 
-La PR #24 est mergée mais la release n'est pas coupée : `pyproject.toml` est
-encore en `version = "0.2.0"`, aucun tag `v0.3.0`/`v0.4.0` n'existe, et le
-CHANGELOG garde tout sous « Unreleased ». Une fois ce plan validé : bump de
-version, section `## [0.4.0]` datée dans le CHANGELOG, tag (cf. `RELEASING.md`).
+`pyproject.toml` est passé en `0.4.0` et le CHANGELOG a sa section
+`## [0.4.0]` (elle englobe le jalon plotting 0.3.0, jamais publié séparément —
+les tags `v0.1.0`/`v0.2.0` existent déjà). Une fois ce plan validé et la branche
+mergée sur `main`, il ne reste que le tag :
+
+```bash
+git tag v0.4.0
+git push origin v0.4.0   # déclenche release.yml -> build + publication PyPI
+```
