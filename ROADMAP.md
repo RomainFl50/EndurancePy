@@ -16,172 +16,219 @@ Guiding principles:
 - **Optional heavy deps.** Plotting/interactive backends live behind extras
   (`pip install endurancepy[plot]`); the core stays light.
 
----
+## Where we are
 
-## 0.3.0 — Plotting (the focus)
+**0.4.0 is published.** The library loads a session from the Al Kamel archives
+(discovery, cache, Analysis/Classification/Weather parsers), exposes
+FastF1-style data objects with the `pick_*` filters, ships a full set of
+interactive Plotly charts (strategy Gantt, race trace, gaps, positions, pace,
+pit stops, with track-status and day/night overlays), and a first layer of
+race-craft tables (`pit_stops`, `stint_summary`, `driver_summary`,
+`lead_changes`, `battles`, `time_lost`, `fuel_corrected`). Details in the
+[CHANGELOG](CHANGELOG.md).
 
-Today `endurancepy.plotting` ships only colour helpers (`get_class_color`,
-`get_manufacturer_color`) + `setup_mpl`, and every chart in `examples/` is
-hand-built. 0.3.0 turns plotting into a first-class, endurance-aware feature.
-
-### Signature chart helpers
-
-Reusable functions that return the native figure (a `plotly.Figure` on the
-interactive path, or matplotlib `(fig, ax)` on the static path) — composable,
-never showing/blocking internally. (✅ = shipped.)
-
-- ✅ **`plot_strategy(session)`** — Gantt of the stints: one horizontal bar per
-  car, segmented by stint, the gaps being pit stops. *The* endurance plot.
-- ✅ **`plot_race_trace(session)`** — cumulative delta of each car vs a reference
-  pace ("race trace"): exposes position battles and the cost of neutralisations.
-- ✅ **`plot_position_evolution(session)`** — position lap-by-lap, overall and per
-  class (`in_class=`).
-- ✅ **`plot_gap(session)`** — gap to the (class) leader over the laps.
-- ✅ **`plot_pace(session)`** (box/violin) / ✅ **`plot_lap_evolution(session)`** —
-  pace distribution per class and the per-car evolution lines.
-- ✅ **`plot_driver_comparison(car)`** — pace distribution per driver within a crew.
-- ✅ **`plot_fastest_laps`** — best lap per car (delta to overall best), by class.
-- ✅ **`plot_stint_pace`** — lap time vs lap-in-stint (tyre/fuel degradation).
-- ✅ **`plot_top_speeds`** — top-speed distribution per class.
-- ✅ **Driver changes** are marked on `plot_strategy` (a caret at each new-driver
-  stint). Pit-stop *durations* still need the raw `PIT_TIME` (not kept — backlog).
-
-### Colour & style system
-
-- ✅ **`get_car_style()`** — a class colour **plus** a per-car dash/marker, so the
-  cars sharing one class colour stay distinguishable.
-- ✅ **De-duplicated legend** — charts group traces by class (one legend header per
-  class), so the `seen: set` copy-paste is gone.
-- ✅ **`get_team_color` + `TEAM_COLORS`** — team colours matched on a distinctive
-  substring of the entrant name.
-- **Per-series palettes** (IMSA GTP/GTD vs WEC Hypercar/LMGT3) and wider coverage.
-
-### Axes & theming
-
-- ✅ **Lap-time axis & hover formatting** — Plotly charts use a clock axis
-  (`M:SS.mmm`) and format hovers via `format_timedelta`; `laptime_formatter()` /
-  `format_time_axis(ax)` do the same on the matplotlib/seaborn path. (Timple is
-  the matplotlib-only alternative — see the library notes below.)
-- ✅ **Track-status overlay** — `add_track_status(fig, source)` shades FCY / safety
-  car / code 60 / red-flag lap windows on any lap-axis chart.
-- ✅ **Light/dark theme** — `setup_mpl(theme="light"|"dark")`.
-- **Seaborn static path** (ready-made static `plot_pace`/distribution charts on
-  top of the styling helpers).
-
-### Data prerequisites (done *with* the plotting)
-
-- ✅ **Per-lap `GapToLeader` / `GapToLeaderInClass`** computed in the Analysis
-  parser (`Position` / `PositionInClass` were already derived). These underpin the
-  gap, position and trace charts.
-- **`Hour`** (and the session `Duration`/end time we deferred) for time axes.
+What follows is the plan to 1.0.0: five themed milestones, then the stable
+release. Each milestone follows the established release methodology
+(CHANGELOG section + version bump in the release PR, manual test plan
+`docs/test_plan_<version>.md` run against a real race, tag from `main`,
+publishing via the `v*` tag — see `RELEASING.md`).
 
 ---
 
-## Plotting library evaluation
+## 0.5.0 — Season & championship
 
-0.3.0 needs a backend decision. Endurance fields are **large** (often 30–60+ cars)
-and races are **long** (6–24 h, hundreds of laps), so a static chart of the whole
-field turns into spaghetti fast. **Interactivity is therefore a requirement, not a
-nicety**: zoom into a stint window, hover for car/driver/lap/gap, and click the
-legend to isolate a car or class. Plain matplotlib output also just looks dated
-next to Plotly/seaborn.
+Zoom out from one race to the title fight. This is the last big *data* gap:
+everything below one race is covered; nothing above it is.
 
-| Library | Strengths | Trade-offs | Fit for EndurancePy |
-|---|---|---|---|
-| **Plotly** | Interactive by default (zoom/pan/hover, legend-toggle to isolate a car/class), notebook-native, standalone-HTML export, modern look | Heavier dep; large JSON for very long races (mitigated by `Scattergl`/WebGL) | **Primary/default backend** — the dense timelines (strategy, trace, gap, evolution) need it |
-| **Seaborn** | Polished statistical charts (violin/box/KDE of pace) over matplotlib; great for print/PDF | Static; thin wrapper, so bespoke timelines still need raw matplotlib | **Static "pretty" path** — pace distributions & publication figures |
-| **Matplotlib** | Total low-level control; what FastF1 uses; engine under seaborn | No interactivity; dated default style; weak timedelta axes (needs Timple) | The engine under seaborn / static fallback — not the user-facing default |
-| **Bokeh** | Interactive, streaming/server, scales to large data | More verbose than Plotly; server model is overkill here | Later, only if a live/dashboard angle appears |
-| **HoloViews + Datashader** | Renders millions of points, pixel-accurate, zoomable | Conceptual weight; another abstraction | Escalation only, if Plotly+WebGL hits a perf wall (full field × 24 h) |
-| **Altair (Vega-Lite)** | Declarative grammar-of-graphics, faceting | Awkward for custom timelines (Gantt/trace); data-size limits | Not planned |
-| **Timple** | matplotlib timedelta locators/formatters (by FastF1's author) | **matplotlib-only**; dormant (last release 0.1.6, May 2023) | Only on the seaborn/matplotlib path; otherwise superseded by our own formatter |
+### Data prerequisites
 
-**Recommendation:** Plotly-first (interactive), seaborn for static stats.
-
-1. **Plotly is the default backend** for the dense, signature charts (strategy
-   Gantt, race trace, position/gap evolution, lap evolution). Interactivity —
-   zoom into a stint, hover for car/driver/lap/gap, legend-toggle a class — is
-   what keeps a 50-car / 24 h chart readable. Use `Scattergl` (WebGL) for the
-   high-point-count traces, and export standalone HTML for sharing.
-2. **Seaborn for the static, statistical "pretty" path** (pace distributions:
-   violin/box/KDE per class) and clean print/PDF figures.
-3. **Duration formatting** is done with our own `format_timedelta` — as Plotly
-   tick text / `hovertemplate` on the Plotly path, and a small matplotlib
-   `Formatter` on the seaborn path. **Timple** is matplotlib-only and dormant, so
-   it's a documented opt-in for the seaborn path, not a dependency.
-4. Helpers stay **backend-aware but return the native figure** (`plotly.Figure`
-   or matplotlib `(fig, ax)`) so users can keep customising.
-5. Defer **Bokeh** and **HoloViews/Datashader** unless a dashboard need or a real
-   Plotly performance wall shows up.
-
----
-
-## Beyond 0.3.0 — future versions
-
-Framed as a fan/analyst: the things that make you actually *understand* an
-endurance race. Versions are a direction, not a promise; each item notes when it
-depends on data we still need to verify.
-
-### 0.4.0 — Race-craft & strategy analysis
-
-The story of an endurance race *is* strategy — this is where the library earns
-its keep for analysts.
-
-- **Pit-stop analysis** — ✅ the raw `PitTime` is kept on each in-lap;
-  `pit_stops()` lists every stop with the position gained/lost across it (a rough
-  undercut/overcut outcome) and `plot_pit_stops` charts them. Still to come:
-  pit-lane time loss and proper pairwise undercut/overcut attribution.
-- **Stint & degradation** — ✅ `stint_summary()` gives per-stint best/median pace
-  and a degradation slope (s/lap), and ✅ `fuel_corrected()` normalises pace to a
-  common fuel load. Still to come: tyre-life estimates.
-- **Driver analysis** — ✅ `driver_summary()` gives per-driver laps, time in car,
-  pace and consistency. Still to come: day vs night running, best/worst stint.
-- **Gap / interval engine** — ✅ `lead_changes()` (leadership periods),
-  ✅ `battles()` (cars nose-to-tail within Xs for N laps) and ✅ `time_lost()` (vs a
-  car's own clean pace). Still to come: real on-track intervals (not just
-  lap-aligned).
-- **Session context fill** — ✅ `Hour` (time of day) is populated from the CSV and
-  ✅ `add_day_night()` shades night windows on the charts. Still to come:
-  `LapStartDate` (needs the session date) and the deferred session `Duration` /
-  `EndTime` for non-races.
-
-### 0.5.0 — Season & championship
-
-Zoom out from one race to the title fight.
-
-- **Series-specific points** on top of the generic `compute_standings` — WEC /
-  IMSA / ELMS systems, Le Mans multipliers, drop scores, pole / fastest-lap
-  points.
-- **Cross-event trends** — a car / driver / manufacturer's form across a season;
-  qualifying vs race pace; grid vs finish.
-- **Driver categories** (Bronze / Silver / Gold / Platinum) and **entry metadata**
-  (chassis / engine / tyre / category) — *if* the entry list / Classification CSV
+- **Verified Classification-CSV parser everywhere.** Today race results can be
+  read from the Classification CSV, but grid position, points and penalties are
+  still reconstructed or missing. Verify the real columns across series/years
+  (same probe approach as 0.1.0) and expose **grid, points, penalties, status
+  (running / retired / NC / DSQ)** straight from source.
+- **Entry metadata** — chassis / engine / tyre supplier and **driver categories**
+  (Bronze / Silver / Gold / Platinum), *if* the entry list or Classification CSV
   exposes them. Am-class Bronze pace is a story of its own.
-- **Manufacturer / BoP lens** — class-performance comparison across events (data
-  permitting), to follow the Balance-of-Performance narrative.
 
-### 0.6.0 — Live
+### Features
 
-Follow it as it happens.
+- **Series-specific points** on top of the generic `compute_standings` — named
+  presets for the WEC / IMSA / ELMS systems, Le Mans multipliers, drop scores,
+  pole / fastest-lap bonus points. Presets stay *configurations* of the generic
+  calculator, not a rules engine (see non-goals).
+- **Season loader** — `get_season(year, series)`-style convenience that loads
+  every race of a season (cached), so cross-event work is one call, not a loop.
+- **Cross-event trends** — a car / driver / manufacturer's form across a season:
+  qualifying vs race pace, grid vs finish, pace rank round by round.
+- **Manufacturer / BoP lens** — class-performance comparison across events
+  (data permitting), to follow the Balance-of-Performance narrative.
+- **Championship charts** — `plot_standings_evolution` (points round by round,
+  per class) and a season-form heatmap (car × round).
 
-- **Live timing** via the existing `live` extra (socket.io) — streaming laps,
-  positions and gaps; live-updating charts; event hooks (pit, lead change, FCY).
+Exit criteria: reproduce a full WEC and ELMS season's final standings (all
+classes) from source data, and tell the story of a title fight in one notebook
+(`docs/test_plan_0.5.0.md`).
 
-### Data & ecosystem (continuous)
+## 0.6.0 — Race-craft, deeper
 
-- Verified **Classification-CSV parser** — grid, points and penalties straight
-  from source (results are reconstructed from the laps today).
-- Wider **series / season coverage** & fixtures across WEC / ELMS / Asian Le Mans
-  / Le Mans Cup / IMSA, including historical archives (Le Mans deep dives).
-- **Race-report generator + CLI** — `endurancepy report 2024 WEC "Le Mans"` → one
-  shareable HTML with the strategy, race trace, gaps, pit stops and standings.
-- **Exports** (CSV / Parquet) and a hosted **docs site** with a rendered gallery.
-- **Plotting** — seaborn static charts, per-series palettes, animated
-  position/gap evolution.
+Finish what 0.4.0 started: everything marked "still to come" in the strategy
+layer, now that the simple versions have proven the shape of the API.
+
+- **Real on-track intervals** — gaps interpolated at the crossing times (not
+  just lap-aligned), so `battles()` and `plot_gap` reflect what you'd see at the
+  track. This is the interval engine v2 that several 0.4.0 tables were waiting
+  for.
+- **Pit economics** — pit-lane *time loss* (vs drive-through time, per track,
+  estimated from the data) and proper **pairwise undercut/overcut attribution**
+  (who gained on whom across a stop window), replacing the rough
+  `PlacesGained` proxy.
+- **Tyre-life estimates** — extend `stint_summary`'s degradation slope into a
+  usable tyre model: predicted cliff, optimal stint length per class/car.
+- **Driver analysis, completed** — day vs night running splits, best/worst
+  stint per driver, traffic-adjusted pace (building on `time_lost`).
+- **Session context, completed** — `LapStartDate` (needs the session date,
+  available via `Event.get_dates()`), and the deferred session `Duration` /
+  `EndTime` for non-race sessions.
+- **Chart upgrades** — pit-stop durations rendered on `plot_strategy` (the
+  `PitTime` is kept since 0.4.0), and undercut/overcut annotations on the
+  race trace.
+
+Exit criteria: a Le Mans 24h strategy deep-dive notebook whose numbers
+(intervals, pit loss, tyre life) survive a sanity check against the broadcast
+narrative (`docs/test_plan_0.6.0.md`).
+
+## 0.7.0 — Reporting, exports & the docs site
+
+Make the library's output *shareable* — the milestone where EndurancePy stops
+being notebook-only.
+
+- **Race-report generator + CLI** — `endurancepy report 2024 WEC "Le Mans"` →
+  one standalone shareable HTML: strategy Gantt, race trace, gap chart, pit
+  stops, results and (0.5.0 permitting) championship impact. The CLI is a thin
+  layer over a `report(session)` API.
+- **Exports** — first-class CSV / Parquet export of every data object
+  (`Laps`, `SessionResults`, the strategy tables), round-trippable.
+- **Hosted docs site** — API reference + narrative guides + the plotting
+  gallery, with executed notebooks (rendered offline in CI via the faked
+  download layer, like `examples/` today). Publish on tagged releases.
+- **Static plotting path** — the seaborn/matplotlib "pretty" variants of the
+  distribution charts (`plot_pace`, driver comparison) for print/PDF, on top of
+  `setup_mpl` + `format_time_axis`.
+- **Per-series palettes** — IMSA (GTP/GTD…) vs WEC/ELMS (Hypercar/LMGT3…)
+  colour sets and wider team/manufacturer coverage.
+- **Animated evolution charts** — animated position/gap evolution (Plotly
+  frames) for social-media-friendly output.
+
+Exit criteria: `pip install endurancepy && endurancepy report …` produces a
+report a race fan would actually share; docs site live
+(`docs/test_plan_0.7.0.md`).
+
+## 0.8.0 — Live
+
+Follow it as it happens. Deliberately *after* the reporting milestone: live
+reuses the charts and tables, streaming into them.
+
+- **Live timing client** via the existing `live` extra (socket.io) — streaming
+  laps, positions and gaps into the same `Laps`/`SessionResults` shapes, so
+  every existing table and chart works on a live session.
+- **Live-updating charts** — the Plotly figures refresh as laps arrive
+  (notebook first; a dashboard server stays out of scope unless demand shows).
+- **Event hooks** — callbacks on pit entry, lead change, FCY/safety car, so
+  users can script alerts.
+- **Replay mode** — feed a recorded stream back through the live path, for
+  offline development and tests (no live dependency in CI, same philosophy as
+  the faked download layer).
+
+Exit criteria: follow a real race weekend live end-to-end; the replay fixture
+of that stream becomes the regression test (`docs/test_plan_0.8.0.md`).
+
+## 0.9.0 — Coverage, hardening & API freeze
+
+The release-candidate milestone: no new feature themes, everything aimed at
+making 1.0.0 boring.
+
+- **Coverage sweep** — verify loading + parsing across all supported series
+  (WEC / ELMS / Asian Le Mans / Le Mans Cup / IMSA) and back through the
+  historical archives (Le Mans deep dives); grow the synthetic fixture set to
+  cover every format quirk found.
+- **Performance pass** — full-field 24 h sessions (60+ cars, thousands of laps):
+  parse time, memory, chart responsiveness (`Scattergl` where needed), cache
+  behaviour.
+- **API review & freeze** — one pass over the whole public surface for naming
+  and signature consistency (FastF1 parity where it applies); execute all
+  pending deprecations; from here to 1.0.0, breaking changes only with a
+  deprecation cycle.
+- **Robustness** — every loader/table degrades gracefully on partial data
+  (typed-but-empty, documented); error messages say *which* file/column was the
+  problem.
+- **Docs completeness** — every public name documented on the site; the
+  gallery covers every chart; `py.typed` shipped and mypy-clean strictness
+  raised where cheap.
+
+Exit criteria: the 1.0.0 checklist below is green except the soak time.
+
+## 1.0.0 — Stable
+
+A promise, not a feature drop. 1.0.0 is 0.9.x plus soak time and the semver
+contract:
+
+- **Semver applies to the documented public API** — the top-level `endurancepy`
+  namespace, the data objects and their documented columns, the `pick_*`
+  filters, the strategy tables, `plotting`, and the CLI. Internals
+  (`alkamel.*` parsing details, cache layout) stay changeable; the cache is
+  versioned by `PARSER_VERSION` anyway.
+- **Release checklist** — all series in the coverage sweep load; docs site
+  complete; zero known data-corruption bugs; deprecation policy documented;
+  0.9.x has soaked through at least one real race weekend without a hotfix.
+- Then: cut, tag, publish — same procedure as every release, just with a
+  bigger number.
+
+After 1.0.0, the same themes continue as 1.x minors (new seasons/series as
+they publish, more presets, chart requests) under the semver contract.
+
+---
+
+## Continuous (any milestone)
+
+Not tied to a version — picked up whenever they're cheap or needed:
+
+- New seasons/series fixtures as Al Kamel publishes them; format-drift watch
+  (the `network`-marked integration test is the canary).
+- Palette & team-colour upkeep (entry lists change every season).
+- Community health: triage, issue templates, contribution docs staying true.
 
 ## Non-goals
 
 - **Car telemetry / per-driver channels** — no public endurance source exists.
 - **A track map** — no public GPS / positional source for these archives.
 - **Replicating a championship's exact regulations** — EndurancePy stays a
-  generic, configurable toolkit, not a rules engine.
+  generic, configurable toolkit (with per-series *presets*), not a rules
+  engine.
+- **A hosted dashboard/service** — the library renders standalone HTML and
+  notebooks; running servers for people is out of scope.
+
+---
+
+## Appendix — plotting backend evaluation (decided, shipped in 0.3.0)
+
+Kept for the record: why Plotly-first. Endurance fields are **large** (often
+30–60+ cars) and races are **long** (6–24 h, hundreds of laps), so a static
+chart of the whole field turns into spaghetti fast. **Interactivity is
+therefore a requirement, not a nicety**: zoom into a stint window, hover for
+car/driver/lap/gap, and click the legend to isolate a car or class.
+
+| Library | Strengths | Trade-offs | Fit for EndurancePy |
+|---|---|---|---|
+| **Plotly** | Interactive by default (zoom/pan/hover, legend-toggle to isolate a car/class), notebook-native, standalone-HTML export, modern look | Heavier dep; large JSON for very long races (mitigated by `Scattergl`/WebGL) | **Primary/default backend** — the dense timelines (strategy, trace, gap, evolution) need it |
+| **Seaborn** | Polished statistical charts (violin/box/KDE of pace) over matplotlib; great for print/PDF | Static; thin wrapper, so bespoke timelines still need raw matplotlib | **Static "pretty" path** — pace distributions & publication figures (0.7.0) |
+| **Matplotlib** | Total low-level control; what FastF1 uses; engine under seaborn | No interactivity; dated default style; weak timedelta axes (needs Timple) | The engine under seaborn / static fallback — not the user-facing default |
+| **Bokeh** | Interactive, streaming/server, scales to large data | More verbose than Plotly; server model is overkill here | Later, only if a live/dashboard angle appears |
+| **HoloViews + Datashader** | Renders millions of points, pixel-accurate, zoomable | Conceptual weight; another abstraction | Escalation only, if Plotly+WebGL hits a perf wall (full field × 24 h) |
+| **Altair (Vega-Lite)** | Declarative grammar-of-graphics, faceting | Awkward for custom timelines (Gantt/trace); data-size limits | Not planned |
+| **Timple** | matplotlib timedelta locators/formatters (by FastF1's author) | **matplotlib-only**; dormant (last release 0.1.6, May 2023) | Only on the seaborn/matplotlib path; otherwise superseded by our own formatter |
+
+The outcome: Plotly is the default backend (shipped 0.3.0, `interactive`
+extra); duration formatting via our own `format_timedelta`; helpers return the
+native figure; seaborn arrives with the static path in 0.7.0; Bokeh /
+HoloViews stay deferred unless a real performance wall shows up.
