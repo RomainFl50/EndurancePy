@@ -88,7 +88,7 @@ session.load(source="path/to/23_Analysis_Race.CSV")
 # Classification (per car / per class)
 session.results
 session.results.pick_classes("HYPERCAR")
-session.cars                  # car numbers in finishing order
+session.cars  # car numbers in finishing order
 
 # Laps
 laps = session.laps
@@ -98,7 +98,7 @@ laps.pick_drivers("Kamui KOBAYASHI")
 fastest = laps.pick_fastest()
 
 # Derived side data
-session.track_status          # green / FCY / SC / code 60 / red
+session.track_status  # green / FCY / SC / code 60 / red
 ```
 
 See the **[usage guide](docs/usage.md)**, the **[plotting gallery](docs/plotting.md)**

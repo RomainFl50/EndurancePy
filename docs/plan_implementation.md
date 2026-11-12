@@ -260,12 +260,16 @@ Réplique du modèle FastF1 (cf. analyse §9) :
 
 ```python
 # endurancepy/__init__.py
-def get_session(year: int, series: str | Series, event: str | int,
-                session: str | int) -> core.Session: ...
+def get_session(
+    year: int, series: str | Series, event: str | int, session: str | int
+) -> core.Session: ...
 def get_event(year: int, series: str | Series, event: str | int) -> events.Event: ...
 def get_event_schedule(year: int, series: str | Series) -> events.EventSchedule: ...
 def set_log_level(level) -> None: ...
+
+
 Cache = cache.Cache
+
 
 # events.py
 class Series(enum.Enum):
@@ -274,6 +278,7 @@ class Series(enum.Enum):
     ASLMS = "alms.alkamelsystems.com"
     LMC = "lemanscup.alkamelsystems.com"
     IMSA = "imsa.results.alkamelcloud.com"
+
 
 # core.Session (sélection)
 class Session:
@@ -287,16 +292,17 @@ class Session:
     @property
     def track_status(self) -> pandas.DataFrame: ...
     @property
-    def cars(self) -> list[str]: ...            # équiv. de Session.drivers
+    def cars(self) -> list[str]: ...  # équiv. de Session.drivers
     def get_car(self, number: str) -> CarResult: ...
+
 
 # core.Laps (sélection) — pick_* FastF1 + ajouts endurance
 class Laps(pandas.DataFrame):
     def pick_drivers(self, ids) -> "Laps": ...
     def pick_teams(self, names) -> "Laps": ...
-    def pick_cars(self, numbers) -> "Laps": ...          # ajout
-    def pick_classes(self, classes) -> "Laps": ...       # ajout
-    def pick_manufacturers(self, names) -> "Laps": ...   # ajout
+    def pick_cars(self, numbers) -> "Laps": ...  # ajout
+    def pick_classes(self, classes) -> "Laps": ...  # ajout
+    def pick_manufacturers(self, names) -> "Laps": ...  # ajout
     def pick_laps(self, numbers) -> "Laps": ...
     def pick_fastest(self, only_by_time=False) -> "Lap | None": ...
     def pick_quicklaps(self, threshold=None) -> "Laps": ...
@@ -304,7 +310,7 @@ class Laps(pandas.DataFrame):
     def pick_wo_box(self) -> "Laps": ...
     def pick_box_laps(self, which="both") -> "Laps": ...
     def pick_accurate(self) -> "Laps": ...
-    def pick_stints(self, numbers) -> "Laps": ...        # ajout
+    def pick_stints(self, numbers) -> "Laps": ...  # ajout
 ```
 
 > **Pas** de `get_telemetry`/`Telemetry` : aucune source publique (analyse §6/§13).

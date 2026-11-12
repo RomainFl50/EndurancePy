@@ -70,10 +70,11 @@ names fall back to `DEFAULT_COLOR`.
 For publication / PDF figures and statistical plots:
 
 ```python
-plotting.setup_mpl(theme="dark")   # or "light"; sensible rcParams
+plotting.setup_mpl(theme="dark")  # or "light"; sensible rcParams
 
 import seaborn as sns
-ax = sns.boxplot(...)              # y = LapTime.dt.total_seconds()
+
+ax = sns.boxplot(...)  # y = LapTime.dt.total_seconds()
 plotting.format_time_axis(ax, "y")  # ticks read M:SS.mmm instead of seconds
 ```
 

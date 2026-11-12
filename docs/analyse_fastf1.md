@@ -51,11 +51,11 @@ Chaîne de valeur typique :
 ```python
 import fastf1
 
-session = fastf1.get_session(2023, 'Monza', 'Q')   # crée l'objet (ne charge rien)
-session.load()                                      # télécharge + parse + met en cache
-laps = session.laps                                 # Laps (DataFrame enrichi)
-fastest = laps.pick_fastest()                       # Lap
-tel = fastest.get_telemetry()                       # Telemetry (vitesse, RPM, X/Y…)
+session = fastf1.get_session(2023, "Monza", "Q")  # crée l'objet (ne charge rien)
+session.load()  # télécharge + parse + met en cache
+laps = session.laps  # Laps (DataFrame enrichi)
+fastest = laps.pick_fastest()  # Lap
+tel = fastest.get_telemetry()  # Telemetry (vitesse, RPM, X/Y…)
 ```
 
 Principes structurants à reproduire dans EndurancePy :
@@ -743,26 +743,26 @@ Esquisse d'API (phase 2 — **non implémentée**, ce document précède le code
 import endurancepy as ep
 
 # Calendrier d'une saison pour une série
-sched = ep.get_event_schedule(2024, series='WEC')
+sched = ep.get_event_schedule(2024, series="WEC")
 
 # Une session précise
-session = ep.get_session(2024, series='WEC', event='Le Mans', session='Race')
-session.load()                         # télécharge + parse les fichiers Al Kamel
+session = ep.get_session(2024, series="WEC", event="Le Mans", session="Race")
+session.load()  # télécharge + parse les fichiers Al Kamel
 
 # Classement (par voiture / par classe)
-session.results                        # SessionResults
-session.results.pick_classes('HYPERCAR')
+session.results  # SessionResults
+session.results.pick_classes("HYPERCAR")
 
 # Tours
-laps = session.laps                    # Laps
-laps.pick_cars(['7', '8'])             # par n° de voiture
-laps.pick_classes('LMGT3')             # par catégorie
-laps.pick_drivers('HARTLEY')           # par pilote (relais)
-fastest = laps.pick_fastest()          # meilleur tour
+laps = session.laps  # Laps
+laps.pick_cars(["7", "8"])  # par n° de voiture
+laps.pick_classes("LMGT3")  # par catégorie
+laps.pick_drivers("HARTLEY")  # par pilote (relais)
+fastest = laps.pick_fastest()  # meilleur tour
 
 # Données annexes
 session.weather_data
-session.track_status                   # vert / FCY / SC / code 60 / rouge
+session.track_status  # vert / FCY / SC / code 60 / rouge
 ```
 
 **Modules cibles** (miroir de FastF1) :

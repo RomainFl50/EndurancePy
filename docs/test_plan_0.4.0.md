@@ -41,9 +41,9 @@ from endurancepy import plotting
 ep.set_log_level("INFO")
 ep.Cache.enable_cache("./endurancepy-cache")
 
-print(ep.list_seasons("WEC"))                    # repérer l'id de saison voulu
+print(ep.list_seasons("WEC"))  # repérer l'id de saison voulu
 session = ep.get_session(2023, "WEC", "Le Mans", "Race")
-session.load(season="<id de saison>")            # ex. format "NN_YYYY"
+session.load(season="<id de saison>")  # ex. format "NN_YYYY"
 laps = session.laps
 ```
 
@@ -56,7 +56,11 @@ voitures de tête ; `laps["PitTime"]` non-NaT sur les in-laps uniquement ;
 ```python
 stops = ep.pit_stops(session)
 print(stops.groupby("CarNumber").size().describe())
-print(stops[["CarNumber", "Lap", "PitTime", "PosBefore", "PosAfter", "PlacesGained"]].head(20))
+print(
+    stops[
+        ["CarNumber", "Lap", "PitTime", "PosBefore", "PosAfter", "PlacesGained"]
+    ].head(20)
+)
 ```
 
 ✅ Critères :
@@ -113,9 +117,9 @@ print(ep.lead_changes(session, in_class=True).query("Class == 'LMGT3'"))
 ## 6. `battles`
 
 ```python
-fights = ep.battles(session)                       # défaut : within="1s", min_laps=3, in_class=True
+fights = ep.battles(session)  # défaut : within="1s", min_laps=3, in_class=True
 print(fights.sort_values("Laps", ascending=False).head(10))
-print(len(ep.battles(session, within="3s")))       # seuil plus large -> plus de batailles
+print(len(ep.battles(session, within="3s")))  # seuil plus large -> plus de batailles
 ```
 
 ✅ Critères :
@@ -141,9 +145,11 @@ de neutralisations gonfle le signal — c'est attendu (proxy, pas une mesure).
 
 ```python
 raw = laps["LapTime"].dt.total_seconds()
-corrected = ep.fuel_corrected(session, rate=0.03).dt.total_seconds()  # ~0.03 s/tour de carburant
+corrected = ep.fuel_corrected(
+    session, rate=0.03
+).dt.total_seconds()  # ~0.03 s/tour de carburant
 one = laps[(laps["CarNumber"] == "<voiture>") & (laps["Stint"] == 3)]
-print(raw[one.index] - corrected[one.index])   # 0 au 1er tour du relais, croît ensuite
+print(raw[one.index] - corrected[one.index])  # 0 au 1er tour du relais, croît ensuite
 ```
 
 ✅ Critères : correction nulle au premier tour de chaque relais puis strictement
@@ -155,11 +161,11 @@ rend exactement `LapTime`.
 
 ```python
 fig = plotting.plot_pit_stops(session)
-fig.show()   # bulle par arrêt : x = tour, y = voiture, taille = temps aux stands, couleur = classe
+fig.show()  # bulle par arrêt : x = tour, y = voiture, taille = temps aux stands, couleur = classe
 
 fig2 = plotting.plot_lap_evolution(laps.pick_classes("HYPERCAR"))
 plotting.add_day_night(fig2, session)
-plotting.add_track_status(fig2, session)   # combo 0.3.0 + 0.4.0
+plotting.add_track_status(fig2, session)  # combo 0.3.0 + 0.4.0
 fig2.show()
 ```
 
@@ -177,12 +183,17 @@ fig2.show()
 ep.pit_stops(laps.pick_classes("LMGT3"))
 
 # b) Ancienne saison (CSV sans colonne flag) : toujours parsable, tables non vides
-old = ep.get_session(2019, "WEC", "Spa", "Race"); old.load(season="08_2018-2019")
-ep.stint_summary(old); ep.time_lost(old)
+old = ep.get_session(2019, "WEC", "Spa", "Race")
+old.load(season="08_2018-2019")
+ep.stint_summary(old)
+ep.time_lost(old)
 
 # c) Session sans course (qualif/essais) : tables vides ou réduites, pas d'exception
-quali = ep.get_session(2023, "WEC", "Le Mans", "Qualifying"); quali.load(season="<id>")
-ep.pit_stops(quali); ep.lead_changes(quali); ep.battles(quali)
+quali = ep.get_session(2023, "WEC", "Le Mans", "Qualifying")
+quali.load(season="<id>")
+ep.pit_stops(quali)
+ep.lead_changes(quali)
+ep.battles(quali)
 
 # d) Cache : recharger la même session -> quasi instantané, résultats identiques
 ```
