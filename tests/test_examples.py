@@ -10,6 +10,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -25,15 +26,13 @@ _WEATHER = (_FIXTURES / "weather_sample.csv").read_bytes()
 
 # A synthetic season index listing the Spa race's Analysis and Weather files.
 _BASE = "Results/08_2018-2019/07_SPA FRANCORCHAMPS/267_FIA WEC/201905041330_Race/Hour 6"
-_INDEX_HTML = "".join(
-    f'<a href="{_BASE}/{name}">x</a>'
+_PATHS = [
+    f"{_BASE}/{name}"
     for name in ("23_Analysis_Race_Hour 6.CSV", "26_Weather_Race_Hour 6.CSV")
-)
+]
 
 
 def _fake_download(url: str) -> bytes:
-    if "?season=" in url:
-        return _INDEX_HTML.encode()
     if "Analysis" in url:
         return _ANALYSIS
     if "Weather" in url:
@@ -50,7 +49,10 @@ def _load(name: str) -> ModuleType:
 
 
 @pytest.fixture
-def session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Session:
+def session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_manifests: Any
+) -> Session:
+    mock_manifests(_PATHS)
     monkeypatch.setattr("endurancepy.alkamel.client.download", _fake_download)
     Cache.enable_cache(tmp_path)
     loaded = ep.get_session(2019, "WEC", "Spa", "Race")

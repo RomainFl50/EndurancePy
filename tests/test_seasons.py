@@ -2,36 +2,24 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import endurancepy as ep
 from endurancepy.exceptions import SessionNotAvailableError
 
-# A landing page whose <select name="season"> lists a few WEC seasons.
-_LANDING = """
-<select name="season">
-  <option value="">Select a season</option>
-  <option value="08_2018-2019">2018 - 2019</option>
-  <option value="13_2024">2024</option>
-  <option value="14_2025">2025</option>
-</select>
-"""
-
-
-def _fake_download(url: str) -> bytes:
-    if "?season=" in url:
-        season = url.split("season=")[1].split("&")[0]
-        path = (
-            f"Results/{season}/04_LE MANS/267_FIA WEC/"
-            "202406151600_Race/Hour 24/23_Analysis_Race_Hour 24.CSV"
-        )
-        return f'<a href="{path}">x</a>'.encode()
-    return _LANDING.encode()
-
 
 @pytest.fixture(autouse=True)
-def _patch_download(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("endurancepy.alkamel.client.download", _fake_download)
+def _patch_json(mock_manifests: Any) -> None:
+    paths = [
+        (
+            f"wec/results/{s}/04_LE MANS/267_FIA WEC/"
+            "202406151600_Race/24_Hour 24/23_Analysis_Race_Hour 24.CSV"
+        )
+        for s in ("08_2018-2019", "13_2024", "14_2025")
+    ]
+    mock_manifests(paths, ("08_2018-2019", "13_2024", "14_2025"))
 
 
 def test_list_seasons() -> None:

@@ -143,7 +143,8 @@ class Cache:
                 cache_name=str(db_path),
                 backend="sqlite",
                 expire_after=_HTTP_EXPIRE_SECONDS,
-                stale_if_error=True,
+                allowable_methods=("GET", "HEAD", "POST"),
+                stale_if_error=False,
             )
         settings = getattr(cls._http_session, "settings", None)
         if settings is not None:

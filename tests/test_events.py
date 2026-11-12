@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import datetime as dt
+from typing import Any
 
 import pandas as pd
-import pytest
 
 from endurancepy.alkamel.discovery import (
     build_events,
@@ -90,17 +90,14 @@ def test_get_event_by_name_and_round() -> None:
 
 
 def test_fetch_event_sessions_orders_chronologically(
-    monkeypatch: pytest.MonkeyPatch,
+    mock_manifests: Any,
 ) -> None:
     paths = [
         f"{_LM}/201906151500_Race/24_Hour 24/23_Analysis_Race_Hour 24.CSV",
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906141200_Qualifying/90_ClassificationByClass_Qualifying.CSV",
     ]
-    html = "".join(f'<a href="{p}">x</a>' for p in paths)
-    monkeypatch.setattr(
-        "endurancepy.alkamel.client.download", lambda url: html.encode()
-    )
+    mock_manifests(paths)
     sessions = fetch_event_sessions(
         "fiawec.alkamelsystems.com",
         "08_2018-2019",
@@ -115,15 +112,12 @@ def test_fetch_event_sessions_orders_chronologically(
     assert race.duration == dt.timedelta(hours=24)  # from the "Hour 24" folder
 
 
-def test_event_get_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_event_get_sessions(mock_manifests: Any) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906151500_Race/Hour 6/23_Analysis_Race_Hour 6.CSV",
     ]
-    html = "".join(f'<a href="{p}">x</a>' for p in paths)
-    monkeypatch.setattr(
-        "endurancepy.alkamel.client.download", lambda url: html.encode()
-    )
+    mock_manifests(paths)
     event = _schedule().get_event_by_name("Le Mans")
     sessions = event.get_sessions()
     assert list(sessions["Session"]) == ["Free Practice 1", "Race"]
@@ -133,16 +127,13 @@ def test_event_get_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_fetch_event_dates_spans_the_weekend(
-    monkeypatch: pytest.MonkeyPatch,
+    mock_manifests: Any,
 ) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
     ]
-    html = "".join(f'<a href="{p}">x</a>' for p in paths)
-    monkeypatch.setattr(
-        "endurancepy.alkamel.client.download", lambda url: html.encode()
-    )
+    mock_manifests(paths)
     dates = fetch_event_dates(
         "fiawec.alkamelsystems.com",
         "08_2018-2019",
@@ -152,15 +143,12 @@ def test_fetch_event_dates_spans_the_weekend(
     assert dates == (dt.date(2019, 6, 13), dt.date(2019, 6, 15))  # dates only
 
 
-def test_event_get_dates(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_event_get_dates(mock_manifests: Any) -> None:
     paths = [
         f"{_LM}/201906131000_Free Practice 1/23_Analysis_Free Practice 1.CSV",
         f"{_LM}/201906151500_Race/Hour 24/23_Analysis_Race_Hour 24.CSV",
     ]
-    html = "".join(f'<a href="{p}">x</a>' for p in paths)
-    monkeypatch.setattr(
-        "endurancepy.alkamel.client.download", lambda url: html.encode()
-    )
+    mock_manifests(paths)
     event = _schedule().get_event_by_name("Le Mans")
     assert event.get_dates() == (dt.date(2019, 6, 13), dt.date(2019, 6, 15))
 

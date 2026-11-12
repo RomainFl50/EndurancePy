@@ -33,7 +33,7 @@ def test_public_api_is_exported(name: str) -> None:
 def test_series_coerce_and_host() -> None:
     assert Series.coerce("wec") is Series.WEC
     assert Series.coerce(Series.IMSA) is Series.IMSA
-    assert Series.WEC.host == "fiawec.alkamelsystems.com"
+    assert Series.WEC.host == "fiawec.alkamelcloud.com"
 
 
 def test_get_session_builds_unloaded_object() -> None:

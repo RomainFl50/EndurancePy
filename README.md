@@ -71,8 +71,10 @@ pip install -e ".[dev]"
 ## Usage
 
 The API mirrors FastF1, with an added **series** axis (several championships
-coexist). Today, a session loads from an Analysis CSV (path, bytes or URL);
-automatic discovery of remote files is not implemented yet.
+coexist). A session loads from an Analysis CSV (path, bytes or URL), or discovers
+public files through Al Kamel JSON manifests when no source/cache is available.
+WEC 2026 is verified; see [portal availability](docs/alkamel-public-manifests.md)
+for current ELMS/IMSA limitations.
 
 ```python
 import endurancepy as ep

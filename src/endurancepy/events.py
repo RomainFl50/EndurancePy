@@ -4,9 +4,8 @@ Defines the supported :class:`Series` (each mapped to its Al Kamel results host)
 and the top-level entry points :func:`get_session`, :func:`get_event` and
 :func:`get_event_schedule`.
 
-Season calendars are built by discovering a portal ``?season=`` page (the season
-id, e.g. ``"08_2018-2019"``, is supplied by the caller — the portal's season
-selector is a JS menu that is not scrapeable from static HTML).
+Season calendars are discovered through public settings and JSON manifests.
+Season ids (e.g. ``08_2018-2019``) are preserved for automatic year resolution.
 """
 
 from __future__ import annotations
@@ -39,10 +38,10 @@ _SEASON_YEAR_RE = re.compile(r"^\d+_(\d{4})(?:-\d{4})?$")
 class Series(Enum):
     """Supported endurance championships, mapped to their Al Kamel results host."""
 
-    WEC = "fiawec.alkamelsystems.com"
-    ELMS = "elms.alkamelsystems.com"
-    ASLMS = "alms.alkamelsystems.com"
-    LMC = "lemanscup.alkamelsystems.com"
+    WEC = "fiawec.alkamelcloud.com"
+    ELMS = "elms.alkamelcloud.com"
+    ASLMS = "alms.alkamelcloud.com"
+    LMC = "lemanscup.alkamelcloud.com"
     IMSA = "imsa.results.alkamelcloud.com"
 
     @property

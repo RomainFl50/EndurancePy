@@ -7,6 +7,7 @@ on demand via the ``integration`` GitHub Actions workflow.
 
 from __future__ import annotations
 
+import os
 import urllib.request
 from pathlib import Path
 
@@ -15,11 +16,17 @@ import pytest
 import endurancepy as ep
 
 _SEASON = "08_2018-2019"
-_SEASON_URL = f"https://fiawec.alkamelsystems.com/?season={_SEASON}"
+_SEASON_URL = "https://files.alkamelcloud.com/wec/manifests/results_08_2018-2019.json"
+pytestmark = pytest.mark.skipif(
+    os.environ.get("ENDURANCEPY_NETWORK") != "1",
+    reason="Set ENDURANCEPY_NETWORK=1 to run public-network checks",
+)
 
 
 def _portal_reachable() -> bool:
-    request = urllib.request.Request(_SEASON_URL, headers={"User-Agent": "Mozilla/5.0"})
+    request = urllib.request.Request(
+        _SEASON_URL, headers={"User-Agent": "EndurancePy integration test"}
+    )
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
             return response.status == 200
@@ -58,7 +65,9 @@ def test_event_schedule_via_discovery() -> None:
     assert len(sessions) > 1
     assert sessions["Session"].str.lower().str.contains("race").any()
     assert sessions["StartTime"].notna().all()  # each session has a start time
-    start, end = le_mans.get_dates()  # the weekend's date span (dates only)
+    dates = le_mans.get_dates()
+    assert dates is not None
+    start, end = dates  # the weekend's date span (dates only)
     assert start.year == 2019 and end >= start
 
 

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Restore Al Kamel discovery through public JSON settings and season manifests
+  instead of the retired HTML season menus. Preserve season ids and the public
+  API; store each manifest's absolute download URL on `ResultFile`.
+- Resolve race sessions above their nested `NN_Hour N` folders and choose the
+  latest numeric hour per CSV kind, including races with Analysis only at the
+  final hour. `Session.load()` now discovers the year automatically after a
+  parsed-cache miss when no explicit source/season is supplied.
+- Cache public settings POSTs alongside manifest/CSV GETs; identify requests
+  honestly and stop on restricted settings, HTTP errors, redirects or invalid
+  JSON. No account, cookies, authentication or Turnstile handling.
+
+WEC 2026 Monza validated against the public archives. ELMS's advertised
+2024/2025 season manifests currently return HTML; IMSA has no entry in the
+common settings endpoint. These errors are reported, without an access bypass.
+See [the verification notes](docs/alkamel-public-manifests.md).
+
 ## [0.4.0] - 2026-07-04
 
 First version published since 0.2.0 — it also delivers everything under

@@ -1,12 +1,7 @@
-"""Discovery of result files from an Al Kamel portal index page.
+"""Season/event/session resolution from public Al Kamel JSON manifests.
 
-The portal's ``?season=<id>`` (and ``?season=<id>&evvent=<event>``) pages embed
-the full list of downloadable files as ``Results/<season>/<event>/<series>/
-<session>/[<hour>/]<file>`` paths. Parsing those paths gives a structured index
-of every session's Analysis / Classification / Weather CSV (verified mechanism).
-
-Listing the *seasons* themselves is not done here (the season selector is a JS
-tree menu, not scrapeable from static HTML); callers provide the season id.
+Pure legacy HTML helpers remain available for existing callers and fixtures;
+network discovery uses :mod:`endurancepy.alkamel.manifests` exclusively.
 """
 
 from __future__ import annotations
@@ -26,8 +21,6 @@ _HOUR_RE = re.compile(r"Hour\s*(\d+)", re.IGNORECASE)
 _SESSION_PREFIX_RE = re.compile(r"^\d+_(.*)$")
 _SESSION_TS_RE = re.compile(r"^(\d{12})_")
 _EVENT_PREFIX_RE = re.compile(r"^(\d+)_(.*)$")
-_SEASON_OPTION_RE = re.compile(r'value="(\d{2}_\d{4}(?:-\d{4})?)"')
-_SEASON_TOKEN_RE = re.compile(r"\b\d{2}_\d{4}(?:-\d{4})?\b")
 # Event folders are ``NN_NAME`` with an ALL-CAPS circuit name (e.g. ``07_LE
 # MANS``). The upper-case-only character class excludes file/report prefixes
 # (CamelCase, e.g. ``23_Analysis``) and the negative look-behind excludes
@@ -59,9 +52,12 @@ class ResultFile:
     filename: str
     kind: str
     path: str
+    download_url: str | None = None
 
     def url(self, host: str) -> str:
-        """Build the absolute download URL for a given portal host."""
+        """Use the manifest URL, or build a legacy URL for older records."""
+        if self.download_url is not None:
+            return self.download_url
         encoded = "/".join(quote(part, safe="") for part in self.path.split("/"))
         return f"https://{host}/{encoded}"
 
@@ -71,16 +67,21 @@ def parse_results_paths(html: str) -> list[str]:
     return list(dict.fromkeys(_RESULTS_RE.findall(html)))
 
 
-def _parse_path(path: str) -> ResultFile | None:
+def _parse_path(path: str, *, download_url: str | None = None) -> ResultFile | None:
     # Portal hrefs are percent-encoded; decode so components are human-readable
     # (and so url() re-encodes exactly once).
     path = unquote(path)
     parts = path.split("/")
-    # Results / season / event / series / session / [hour ...] / file
-    if len(parts) < 6 or parts[0] != "Results":
+    # Locate the timestamped session, not a fixed depth: modern URLs add a
+    # client prefix and races add NN_Hour N between the session and the CSV.
+    position = next(
+        (i for i, part in enumerate(parts) if _SESSION_TS_RE.match(part)), -1
+    )
+    if position < 3 or position >= len(parts) - 1:
         return None
-    season, event, series, session = parts[1], parts[2], parts[3], parts[4]
-    rest = parts[5:]
+    season, event, series = parts[position - 3 : position]
+    session = parts[position]
+    rest = parts[position + 1 :]
     filename = rest[-1]
     hour: int | None = None
     for segment in rest[:-1]:
@@ -96,6 +97,7 @@ def _parse_path(path: str) -> ResultFile | None:
         filename=filename,
         kind=_kind(filename),
         path=path,
+        download_url=download_url,
     )
 
 
@@ -195,27 +197,19 @@ def resolve_session_files(
 
 
 def fetch_index(host: str, season: str, event: str | None = None) -> list[ResultFile]:
-    """Download a portal ``?season=`` page and parse it into ResultFile records."""
-    from endurancepy.alkamel.client import download
+    """Load a public season manifest, optionally scoped to one exact event."""
+    from endurancepy.alkamel.manifests import result_files
 
-    url = f"https://{host}/?season={quote(season)}"
-    if event is not None:
-        url += f"&evvent={quote(event)}"
-    html = download(url).decode("utf-8", "replace")
-    return index_page(html)
+    records = result_files(host, season)
+    return [r for r in records if event is None or r.event == event]
 
 
 def fetch_seasons(host: str) -> list[str]:
-    """Return the season ids (e.g. ``"13_2024"``) listed on a portal's home page.
+    """Return the public index's season ids (e.g. ``13_2024``)."""
+    from endurancepy.alkamel.manifests import season_index
 
-    The season selector is a ``<select name="season">``; its option values are
-    the ``NN_YYYY`` ids. Falls back to a page-wide token scan if needed.
-    """
-    from endurancepy.alkamel.client import download
-
-    html = download(f"https://{host}/").decode("utf-8", "replace")
-    ids = _SEASON_OPTION_RE.findall(html) or _SEASON_TOKEN_RE.findall(html)
-    return sorted(dict.fromkeys(ids))
+    _, seasons = season_index(host)
+    return sorted(seasons)
 
 
 def parse_events(html: str) -> list[EventInfo]:
@@ -245,14 +239,10 @@ def parse_events(html: str) -> list[EventInfo]:
 
 
 def fetch_events(host: str, season: str) -> list[EventInfo]:
-    """Download a season page and parse its full event list."""
-    from endurancepy.alkamel.client import download
+    """Build the event list from a public season manifest's records."""
     from endurancepy.logger import LOGGER
 
-    html = download(f"https://{host}/?season={quote(season)}").decode(
-        "utf-8", "replace"
-    )
-    events = parse_events(html)
+    events = build_events(fetch_index(host, season))
     LOGGER.info(
         "Discovered %d events for season %s: %s",
         len(events),
@@ -283,9 +273,8 @@ def fetch_event_sessions(
 ) -> list[SessionInfo]:
     """List an event's sessions (name, start time, duration), chronologically.
 
-    The season calendar only lists events (not their sessions); the sessions
-    live on the event's own page (``?season=<id>&evvent=<folder>``). Fetches
-    that page and returns one :class:`SessionInfo` per session, ordered by start.
+    Reads the event's records from the season manifest and returns one
+    :class:`SessionInfo` per session, ordered by start.
     """
     from endurancepy.logger import LOGGER
 
@@ -328,7 +317,7 @@ def fetch_event_dates(
 ) -> tuple[dt.date, dt.date] | None:
     """Resolve the span of *dates* an event runs over (``(first, last)`` days).
 
-    Like :func:`fetch_event_sessions`, this reads the event's own page and uses
+    Like :func:`fetch_event_sessions`, this reads the season manifest and uses
     the session folders' ``YYYYMMDDHHMM`` timestamps -- but only their date part
     (no time): the first and last calendar day of the race weekend. ``None`` if
     no date can be parsed.

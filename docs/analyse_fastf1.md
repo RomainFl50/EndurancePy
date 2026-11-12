@@ -542,37 +542,64 @@ portée à partir des archives Al Kamel.
 | Performance | — | **Balance of Performance (BoP)** | Source séparée (bulletins PDF), **absente** des CSV de timing. |
 | Constructeur | Écurie | **Manufacturer** distinct de l'équipe | Ajouter `Manufacturer`. |
 
-### 14.2 Source de données : archives Al Kamel
+### 14.2 Source 2 : archives publiques Al Kamel (manifestes JSON)
 
-**Fait clé (vérifié)** : *tous* les championnats visés sont chronométrés par Al
-Kamel Systems — **y compris IMSA** (sur un domaine différent). Un **seul
-parseur** couvre donc WEC / ELMS / Asian Le Mans / Le Mans Cup / IMSA ; seuls
-changent l'hôte de base et de menus détails d'encodage d'URL.
+**Vérifié le 2026-11-12** : WEC et ELMS utilisent un portail SPA avec
+configuration et index JSON publics. La disparition du menu HTML ne prouve pas
+une fermeture des données. Les parseurs CSV restent communs ; la découverte
+est isolée dans `alkamel/manifests.py`, puis produit les mêmes `ResultFile`.
+[Constat détaillé et curl](alkamel-public-manifests.md).
 
-| Série | Portail de résultats (hôte) |
-|---|---|
-| FIA WEC | `fiawec.alkamelsystems.com` |
-| ELMS | `elms.alkamelsystems.com` |
-| Asian Le Mans Series | `alms.alkamelsystems.com` |
-| (Michelin) Le Mans Cup | `lemanscup.alkamelsystems.com` |
-| IMSA | `imsa.results.alkamelcloud.com` (anc. `imsa.alkamelsystems.com`) |
+| Série | Hôte déclaré | Vérification |
+|---|---|---|
+| FIA WEC | `fiawec.alkamelcloud.com` | config/index/manifeste 2026/CSV Monza publics |
+| ELMS | `elms.alkamelcloud.com` | config/index publics ; manifestes 2024/2025 annoncés renvoyant du HTML |
+| Asian Le Mans Series | `alms.alkamelcloud.com` | suffixe migré, non validé en réseau ici |
+| Le Mans Cup | `lemanscup.alkamelcloud.com` | suffixe migré, non validé en réseau ici |
+| IMSA | `imsa.results.alkamelcloud.com` | portail HTML historique ; settings commun renvoie 404 |
 
-**Structure d'URL des fichiers (vérifiée)** :
+Parcours WEC/ELMS :
 
+1. POST `https://5ucg0oksmg.execute-api.us-west-2.amazonaws.com/dev/v2/settings`,
+   corps `{"url":"fiawec.alkamelcloud.com"}` (ou domaine ELMS).
+2. Exiger `requiresAuth=false` et `sections.results.dataAccess="free"`. Sinon,
+   lever `SessionNotAvailableError` : aucun compte, cookie, Authorization,
+   login ou traitement Turnstile.
+3. GET `galleriesUrl` : `seasons_index` avec `seasons[]{id,name,manifestUrl}`,
+   ou `series_index` avec `series[].indexUrl` menant aux saisons. Conserver les
+   identifiants `NN_YYYY` / `NN_YYYY-YYYY` pour `_resolve_season(year)`.
+4. Résoudre tous les chemins relatifs depuis **l'origine de galleriesUrl**.
+5. Manifeste de saison : `folders[]` récursif via `children[]`. Les feuilles
+   portent `url` ; les libellés d'affichage omettent les préfixes numériques.
+
+Chemin documentaire moderne observé :
+
+```text
+https://files.alkamelcloud.com/wec/results/<NN_YYYY>/<NN_ÉVÉNEMENT>/<NNN_SÉRIE>/<YYYYMMDDHHMM_SESSION>/[NN_Hour N/]<FICHIER>
 ```
-https://<hôte>/Results/<NN_YYYY>/<NN_ÉVÉNEMENT>/<NNN_SÉRIE>/<YYYYMMDDHHMM_SESSION>/[Hour N/]<FICHIER>
-```
 
-- `<NN_YYYY>` : saison, ex. `13_2024`, `08_2018-2019`
-- `<NN_ÉVÉNEMENT>` : ex. `04_LE MANS`, `07_SPA FRANCORCHAMPS`
-- `<NNN_SÉRIE>` : ex. `267_FIA WEC`
-- `<YYYYMMDDHHMM_SESSION>` : ex. `201905041330_Race`
-- Pour les courses, un sous-dossier `Hour N/` ; espaces encodés `%20`
-- Navigation HTML : `?season=13_2024&evvent=01_SILVERSTONE` *(le paramètre est
-  bien orthographié* `evvent`*, avec deux « v » — vérifié)*
+**Piège des courses** : chercher la séance par `^\d{12}_`, pas par position
+fixe ou par le dernier dossier. Les trois parents sont saison/événement/série ;
+les dossiers suivants peuvent inclure `06_Hour 6` ou `24_Hour 24`. L'Analysis
+complet peut n'exister qu'à la dernière heure. Sélection numérique de l'heure
+maximale par type, indépendamment de l'ordre dans l'arbre. Le filtre de série
+existant exclut les courses support.
 
-> Exemple réel :
-> `https://fiawec.alkamelsystems.com/Results/08_2018-2019/07_SPA%20FRANCORCHAMPS/267_FIA%20WEC/201905041330_Race/Hour%206/23_Analysis_Race_Hour%206.CSV`
+`ResultFile.download_url` contient l'URL absolue annoncée ; `url(host)` l'utilise
+sans reconstruire un ancien chemin `Results/`. Les utilitaires HTML/URL
+historiques restent disponibles pour compatibilité, mais ne sont plus utilisés
+par la découverte réseau.
+
+Cache HTTP `requests-cache` conservé (GET et POST settings), UA EndurancePy
+honnête, pas de réponse périmée en repli sur erreur, pas de redirection suivie.
+Toute erreur HTTP, donnée d'accès restreinte ou réponse JSON invalide est signalée
+par `SessionNotAvailableError`, sans recherche de chemin caché.
+
+Validation réelle : calendrier WEC 2026 de 8 manches ; appel
+`ep.get_session(2026, series="WEC", event="Monza", session="Race").load()` :
+5 660 tours, 35 voitures, 314 lignes météo et 35 résultats, depuis `06_Hour 6`.
+Aucune donnée brute conservée dans Git. Pas de validation complète ELMS/IMSA :
+les erreurs amont mentionnées ci-dessus sont signalées sans contournement.
 
 ### 14.3 Fichiers publiés par session
 

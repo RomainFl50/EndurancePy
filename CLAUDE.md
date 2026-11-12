@@ -11,8 +11,9 @@ src/endurancepy/
   core.py            Session / Laps / Lap / SessionResults data objects; the
                      pick_* filters (pick_cars, pick_classes, pick_fastest, …)
   alkamel/           the portal-specific layer:
-    client.py          results-tree URL building + cache-aware download
-    discovery.py       season/event/session resolution (fuzzy-matched indexes)
+    client.py          anonymous cache-aware CSV/JSON download; legacy URL helper
+    manifests.py       public settings -> season indexes -> document trees
+    discovery.py       season/event/session resolution (fuzzy-matched records)
     analysis.py        Analysis CSV -> Laps — the core parser (stints, pit
                        in/out, positions, gaps, Hour, PitTime)
     classification.py  race Classification CSV -> SessionResults
@@ -57,6 +58,9 @@ python -m mypy                             # targets 3.12 (see pyproject comment
 - **No raw Al Kamel data in the repo.** Fixtures are synthetic; tests and the
   examples run offline by monkeypatching `endurancepy.alkamel.client.download`
   (see `tests/test_examples.py` for the canonical pattern).
+- JSON discovery tests patch `endurancepy.alkamel.client.download_json` (keyword
+  `payload` for the settings POST); CSV tests still patch `client.download`.
+  `tests/conftest.py::mock_manifests` is the synthetic portal fixture.
 - Analysis tables (`strategy.py`) accept a `Session`, a `Laps` or a plain
   `DataFrame`, and return typed-but-empty DataFrames instead of raising when
   the input has nothing to say.
@@ -64,6 +68,38 @@ python -m mypy                             # targets 3.12 (see pyproject comment
   installs only `.[dev]`).
 - New user-facing work: update `CHANGELOG.md` (under `## [Unreleased]`) and
   `ROADMAP.md` in the same PR.
+
+## Source 2 — public Al Kamel archives (verified 2026-11-12)
+
+- WEC/ELMS use `*.alkamelcloud.com`. POST public settings at
+  `https://5ucg0oksmg.execute-api.us-west-2.amazonaws.com/dev/v2/settings`,
+  JSON `{"url":"fiawec.alkamelcloud.com"}` (or `elms.alkamelcloud.com`). Require
+  `requiresAuth is False` AND `sections.results.dataAccess == "free"`; otherwise
+  raise `SessionNotAvailableError`. Never register/login, solve Turnstile, send
+  cookies/Authorization or impersonate a browser.
+- `galleriesUrl` points to `seasons_index` (`seasons[].manifestUrl`) or
+  `series_index` (`series[].indexUrl` -> season indexes). Relative URLs resolve
+  from the **origin of galleriesUrl**. Keep season ids as `NN_YYYY` (including
+  `NN_YYYY-YYYY` superseasons); nonseason entries like `zz_test` are excluded.
+- Season manifests contain recursive `folders[].children[]`; document leaves
+  have `url`. Find the timestamped session folder by `^\d{12}_`, then take its
+  three parents as season/event/series. Race CSVs may be under `NN_Hour N`;
+  select the numerically latest hour per kind, not the last traversal item.
+  `ResultFile.download_url` preserves the resolved absolute URL and `url(host)`
+  uses it. Existing CSV parsers and the legacy URL helper remain unchanged.
+- `Session.load()` without a source/season uses parsed laps from cache, then
+  auto-resolves the year and discovers files when the cache is empty.
+  `requests-cache` caches settings POSTs as well as GETs. Stale-on-error is
+  disabled; HTTP errors, redirects and invalid JSON stop with
+  `SessionNotAvailableError`. No guessed endpoint fallback.
+- WEC 2026 / Monza Race verified: 5,660 laps, 35 cars, 314 weather rows, final
+  Hour 6. ELMS config/index are public, but advertised 2024/2025 season URLs
+  returned HTML rather than JSON. IMSA's current host serves a legacy HTML
+  portal and has no settings entry at the common endpoint (404). Do not claim
+  working discovery for those seasons/IMSA or work around these failures.
+- Details, curl reproduction and validation limits:
+  [`docs/alkamel-public-manifests.md`](docs/alkamel-public-manifests.md).
+  Network tests are opt-in: `ENDURANCEPY_NETWORK=1 python -m pytest -m network`.
 
 ## Release methodology (merge → tag → publish)
 

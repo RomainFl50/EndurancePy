@@ -258,7 +258,8 @@ class Session:
         source:
             Analysis CSV to read laps from: raw ``bytes``, a filesystem path, or
             an ``http(s)`` URL. When omitted, the parsed laps are loaded from the
-            cache if present.
+            cache if present, otherwise the season is resolved from ``year``
+            and the public manifests are used.
         weather_source:
             Optional Weather CSV (``bytes`` / path / URL) for ``weather_data``.
         results_source:
@@ -272,9 +273,21 @@ class Session:
         Raises
         ------
         SessionNotAvailableError
-            If ``source`` is omitted and the laps are not in the cache.
+            If no public archive is available, access is restricted, or the
+            upstream request/manifest is invalid.
         """
         season = season if season is not None else self.default_season
+        if (
+            season is None
+            and source is None
+            and laps
+            and weather_source is None
+            and results_source is None
+            and Cache.load_dataframe(self._cache_key()) is None
+        ):
+            from endurancepy.events import _resolve_season
+
+            season = _resolve_season(self.series, self.year)
         if season is not None:
             self._load_via_discovery(season, laps=laps, weather=weather)
             return

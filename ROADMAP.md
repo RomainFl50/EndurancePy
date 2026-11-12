@@ -18,6 +18,20 @@ Guiding principles:
 
 ---
 
+## [Unreleased] — repair public archive discovery
+
+- Completed: JSON settings, season/series indexes, recursive document manifests,
+  absolute CSV URLs, numeric race-hour selection, automatic year resolution on
+  an uncached `Session.load()`. Existing CSV parsers and public API preserved.
+- Validated: WEC 2026 schedule and Monza Race (5,660 laps, final Hour 6).
+- Upstream follow-up: ELMS 2024/2025 manifests advertised by the public index
+  return HTML; IMSA's legacy portal has no common settings entry. Recheck only
+  publicly advertised endpoints; do not automate login or bypass protection.
+- Release pending: review/CI, then the existing merge → version → tag procedure.
+  No version bump, tag or PyPI publication is part of this repair.
+
+---
+
 ## 0.3.0 — Plotting (the focus)
 
 Today `endurancepy.plotting` ships only colour helpers (`get_class_color`,

@@ -47,7 +47,13 @@ def test_load_caches_and_reuses(tmp_path: Path) -> None:
     assert reused.get_car("8")["Position"] == 1
 
 
-def test_load_without_source_or_cache_raises(tmp_path: Path) -> None:
+def test_load_without_source_or_cache_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise SessionNotAvailableError("Public archive unavailable")
+
+    monkeypatch.setattr("endurancepy.alkamel.client.download_json", unavailable)
     Cache.enable_cache(tmp_path)
     with pytest.raises(SessionNotAvailableError):
         _session().load()
