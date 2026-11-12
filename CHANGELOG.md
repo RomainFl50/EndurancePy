@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `driver_pace`: season-level driver pace ranking across several rounds, as a
+  percentage gap to each class's best representative pace (mean of a driver's
+  fastest clean laps), optionally grouped by FIA category (supplied by the
+  caller, since the timing CSVs do not carry it). Powers "best driver per grade"
+  views such as the WEC dashboard's season pages.
+
 ### Fixed
 
 - Restore Al Kamel discovery through public JSON settings and season manifests

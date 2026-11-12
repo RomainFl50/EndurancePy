@@ -35,6 +35,7 @@ from endurancepy.events import (
     list_seasons,
 )
 from endurancepy.logger import enable_console_logging, set_log_level
+from endurancepy.pace import driver_pace
 from endurancepy.standings import Standings, compute_standings
 from endurancepy.strategy import (
     battles,
@@ -61,6 +62,7 @@ __all__ = [
     "__version__",
     "battles",
     "compute_standings",
+    "driver_pace",
     "driver_summary",
     "enable_console_logging",
     "format_laptime",
